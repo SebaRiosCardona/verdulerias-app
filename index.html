@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Verdulería — Pedidos</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="logo.png" />
+<meta name="theme-color" content="#3a7d44" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Pantalla de carga -->
+  <div id="pantalla-carga">
+    <div class="spinner" id="spinner-carga"></div>
+    <div id="error-carga" class="oculto">
+      <p id="error-carga-texto"></p>
+      <button id="btn-recargar">Recargar página</button>
+    </div>
+  </div>
+
+  <!-- Aviso de tienda inválida (falta ?tienda=slug en la URL) -->
+  <div id="vista-tienda-invalida" class="pantalla-login oculto">
+    <div class="login-bottom" style="align-items:center;">
+      <div class="aviso-tienda-invalida">
+        <p style="font-size:40px;margin:0;">🥕</p>
+        <h2>Falta el link de tu verdulería</h2>
+        <p style="color:var(--gris);font-size:14px;">
+          Pedile a tu verdulería el link de pedidos (por ejemplo
+          <code>...?tienda=demo</code>) y volvé a intentarlo.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login público: nombre + apellido -->
+  <div id="vista-login" class="pantalla-login oculto">
+    <div class="login-top">
+      <div class="logo">🥬</div>
+      <h1 id="nombre-tienda">Verdulería</h1>
+      <p>Armá tu bolsón y confirmá tu pedido</p>
+    </div>
+    <div class="login-bottom">
+      <form class="card-login" id="form-login">
+        <label for="input-nombre">Nombre</label>
+        <input id="input-nombre" type="text" autocomplete="given-name" required />
+        <label for="input-apellido">Apellido</label>
+        <input id="input-apellido" type="text" autocomplete="family-name" required />
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Vista catálogo -->
+  <div id="vista-catalogo" class="oculto">
+    <header>
+      <div>
+        <h1 id="titulo-catalogo">Catálogo</h1>
+        <div class="subtitulo" id="saludo-cliente"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="btn-ver-compras">Mis Compras</button>
+        <button id="btn-salir">Salir</button>
+      </div>
+    </header>
+
+    <div class="buscador">
+      <div class="buscador-caja">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input id="input-buscar" type="text" placeholder="Buscar fruta o verdura..." />
+      </div>
+    </div>
+
+    <main id="lista-productos"></main>
+
+    <div class="barra-carrito" id="barra-carrito">
+      <div id="barra-descuento" class="barra-descuento falta">Te faltan 5.0 kg para el 10% de descuento</div>
+      <div class="barra-resumen">
+        <div class="barra-totales">
+          <div class="barra-kg" id="barra-kg">0.0 kg</div>
+          <div class="barra-total" id="barra-total">$0</div>
+        </div>
+        <button id="btn-confirmar" disabled>Confirmar pedido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista Mis Compras -->
+  <div id="vista-mis-compras" class="oculto">
+    <header>
+      <div>
+        <h1>Mis Compras</h1>
+        <div class="subtitulo" id="saludo-cliente-compras"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="btn-volver-catalogo">Ver catálogo</button>
+        <button id="btn-salir-2">Salir</button>
+      </div>
+    </header>
+    <main id="lista-pedidos" style="padding-bottom:40px;"></main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

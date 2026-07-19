@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Panel Admin — Verdulería</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .admin-login { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--verde); }
+  .tabs { display:flex; gap:6px; padding:10px 16px; background:#fff; border-bottom:1px solid var(--gris-claro); position:sticky; top:57px; z-index:15; overflow-x:auto; }
+  .tab-btn { border:none; background:var(--verde-claro); color:var(--verde-oscuro); padding:8px 14px; border-radius:20px; font-weight:600; font-size:13px; white-space:nowrap; }
+  .tab-btn.activo { background:var(--verde); color:#fff; }
+  main { padding:14px 16px 60px; }
+  .filtro-cliente { margin-bottom:12px; }
+  .filtro-cliente select { width:100%; padding:10px; border-radius:10px; border:1px solid var(--gris-claro); }
+  .resumen-saldos { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; }
+  .fila-saldo { display:flex; justify-content:space-between; padding:3px 0; }
+  .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; }
+  .pedido-admin.nuevo { border:2px solid var(--rojo); }
+  .etiqueta-nuevo { background:var(--rojo); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; margin-left:6px; }
+  .fila-acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .fila-acciones button { border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600; }
+  .btn-toggle-si { background:var(--verde-claro); color:var(--verde-oscuro); }
+  .btn-toggle-no { background:#f1f1f1; color:var(--gris); }
+  .btn-borrar { background:#fdeaea; color:var(--rojo); margin-left:auto; }
+  .producto-admin { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+  .producto-admin input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .switch { position:relative; width:44px; height:24px; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; background:#f1f1f1; border-radius:24px; transition:.2s; cursor:pointer; }
+  .slider:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  input:checked + .slider { background:var(--verde); }
+  input:checked + .slider:before { transform:translateX(20px); }
+  .form-nuevo-producto { background:#fff; border-radius:12px; padding:14px; margin-bottom:16px; }
+  .form-nuevo-producto label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:8px 0 4px; }
+  .form-nuevo-producto input, .form-nuevo-producto select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .form-nuevo-producto button { margin-top:12px; width:100%; padding:11px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
+  .btn-marcar-vistos { background:var(--verde-claro); color:var(--verde-oscuro); border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600; margin-bottom:12px; }
+</style>
+</head>
+<body>
+
+  <div id="pantalla-carga">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Login admin -->
+  <div id="vista-login-admin" class="admin-login oculto">
+    <form id="form-login-admin" class="card-login" style="width:320px;">
+      <h2 style="margin:0 0 4px;color:var(--verde-oscuro);">Panel Admin</h2>
+      <p style="font-size:13px;color:var(--gris);margin:0 0 6px;" id="nombre-tienda-admin"></p>
+      <label>Contraseña</label>
+      <input id="input-password-admin" type="password" required />
+      <button type="submit">Entrar</button>
+      <p id="error-login-admin" class="oculto" style="color:var(--rojo);font-size:13px;margin-top:10px;"></p>
+    </form>
+  </div>
+
+  <!-- Panel -->
+  <div id="vista-panel" class="oculto">
+    <header>
+      <div>
+        <h1>Admin</h1>
+        <div class="subtitulo" id="subtitulo-admin"></div>
+      </div>
+      <button id="btn-salir-admin">Salir</button>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn activo" data-tab="pedidos">Pedidos</button>
+      <button class="tab-btn" data-tab="productos">Productos</button>
+      <button class="tab-btn" data-tab="clientes">Clientes</button>
+    </div>
+
+    <main>
+      <!-- Tab Pedidos -->
+      <section id="tab-pedidos">
+        <button class="btn-marcar-vistos" id="btn-marcar-vistos">Marcar todos como vistos</button>
+        <div class="filtro-cliente">
+          <select id="select-filtro-cliente">
+            <option value="">Todos los clientes</option>
+          </select>
+        </div>
+        <div class="resumen-saldos" id="resumen-saldos"></div>
+        <div id="lista-pedidos-admin"></div>
+      </section>
+
+      <!-- Tab Productos -->
+      <section id="tab-productos" class="oculto">
+        <div class="form-nuevo-producto">
+          <label>Nombre</label>
+          <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
+          <label>Categoría</label>
+          <select id="np-categoria">
+            <option value="verdura">Verdura</option>
+            <option value="fruta">Fruta</option>
+          </select>
+          <label>Precio por kg</label>
+          <input id="np-precio" type="number" min="0" step="10" placeholder="Ej: 1200" />
+          <button id="btn-agregar-producto">Agregar producto</button>
+        </div>
+        <div id="lista-productos-admin"></div>
+      </section>
+
+      <!-- Tab Clientes -->
+      <section id="tab-clientes" class="oculto">
+        <div id="lista-clientes-admin"></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>
