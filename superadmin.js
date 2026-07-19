@@ -4,7 +4,7 @@ import {
   getAuth, signInAnonymously, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
@@ -42,6 +42,12 @@ const ayudaSlug = el("ayuda-slug");
 const btnCrearTienda = el("btn-crear-tienda");
 const mensajeResultado = el("mensaje-resultado");
 const listaTiendas = el("lista-tiendas");
+
+const modalEliminar = el("modal-eliminar");
+const modalEliminarNombre = el("modal-eliminar-nombre");
+const modalEliminarInput = el("modal-eliminar-input");
+const modalEliminarCancelar = el("modal-eliminar-cancelar");
+const modalEliminarConfirmar = el("modal-eliminar-confirmar");
 
 const EYE_OPEN = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_CLOSED = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
@@ -209,18 +215,23 @@ function renderListaTiendas() {
 
   listaTiendas.innerHTML = tiendasCache.map((t) => `
     <div class="tienda-card" data-id="${t.id}">
+      <button class="btn-eliminar-tienda" data-accion="eliminar" title="Eliminar verdulería" aria-label="Eliminar verdulería">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+      </button>
       <div class="tienda-header">
         <div>
           <div class="tienda-nombre">${t.nombre}</div>
           <div class="tienda-slug">?tienda=${t.id}</div>
           <div class="tienda-clave">Contraseña: <strong>${t.adminPassword || "—"}</strong></div>
         </div>
-        <span class="badge-estado ${t.activa !== false ? "activa" : "inactiva"}">${t.activa !== false ? "ACTIVA" : "INACTIVA"}</span>
+        <div class="estado-switch-wrap">
+          <button class="estado-switch ${t.activa !== false ? "activa" : ""}" data-accion="toggle-activa" role="switch" aria-checked="${t.activa !== false}" title="${t.activa !== false ? "Desactivar" : "Activar"}"></button>
+          <span class="estado-switch-label ${t.activa !== false ? "activa" : ""}">${t.activa !== false ? "ACTIVA" : "INACTIVA"}</span>
+        </div>
       </div>
       <div class="tienda-links">
         <a href="index.html?tienda=${t.id}" target="_blank">Ver catálogo</a>
         <a href="admin.html?tienda=${t.id}" target="_blank">Panel admin</a>
-        <button class="btn-toggle-estado" data-accion="toggle-activa">${t.activa !== false ? "Desactivar" : "Activar"}</button>
       </div>
     </div>
   `).join("");
@@ -235,5 +246,64 @@ function renderListaTiendas() {
       tienda.activa = nuevoValor;
       renderListaTiendas();
     });
+    card.querySelector('[data-accion="eliminar"]').addEventListener("click", () => {
+      abrirModalEliminar(tienda);
+    });
   });
+}
+
+// ---------------------------------------------------------------
+// Eliminar verdulería (permanente)
+// ---------------------------------------------------------------
+let tiendaAEliminar = null;
+
+function abrirModalEliminar(tienda) {
+  tiendaAEliminar = tienda;
+  modalEliminarNombre.textContent = tienda.nombre;
+  modalEliminarInput.value = "";
+  modalEliminarConfirmar.disabled = true;
+  modalEliminar.classList.remove("oculto");
+  modalEliminarInput.focus();
+}
+
+function cerrarModalEliminar() {
+  tiendaAEliminar = null;
+  modalEliminar.classList.add("oculto");
+}
+
+modalEliminarInput.addEventListener("input", () => {
+  modalEliminarConfirmar.disabled = modalEliminarInput.value.trim() !== (tiendaAEliminar?.nombre || "");
+});
+
+modalEliminarCancelar.addEventListener("click", cerrarModalEliminar);
+
+modalEliminarConfirmar.addEventListener("click", async () => {
+  if (!tiendaAEliminar) return;
+  const tienda = tiendaAEliminar;
+
+  modalEliminarConfirmar.disabled = true;
+  modalEliminarConfirmar.textContent = "Eliminando...";
+
+  try {
+    await eliminarTiendaCompleta(tienda.id);
+    cerrarModalEliminar();
+    mostrarMensaje(`"${tienda.nombre}" fue eliminada definitivamente.`, false);
+    await cargarTiendas();
+    renderListaTiendas();
+  } catch (e) {
+    mostrarMensaje("Error al eliminar la verdulería: " + e.message, true);
+  } finally {
+    modalEliminarConfirmar.textContent = "Eliminar definitivamente";
+  }
+});
+
+async function eliminarTiendaCompleta(tiendaId) {
+  const subcolecciones = ["productos", "clientes", "pedidos"];
+  for (const nombreSub of subcolecciones) {
+    const subSnap = await getDocs(collection(db, "verdulerias", tiendaId, nombreSub));
+    for (const subDoc of subSnap.docs) {
+      await deleteDoc(subDoc.ref);
+    }
+  }
+  await deleteDoc(doc(db, "verdulerias", tiendaId));
 }

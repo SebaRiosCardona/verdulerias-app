@@ -13,20 +13,36 @@
   .form-nueva-tienda input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
   .form-nueva-tienda button { margin-top:14px; width:100%; padding:12px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
   .ayuda-slug { font-size:11.5px; color:var(--gris); margin-top:4px; }
-  .tienda-card { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; }
-  .tienda-header { display:flex; justify-content:space-between; align-items:center; }
+  .tienda-card { background:#fff; border-radius:12px; padding:14px 44px 14px 14px; margin-bottom:10px; position:relative; }
+  .tienda-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   .tienda-nombre { font-weight:700; }
   .tienda-slug { font-size:12px; color:var(--gris); }
   .tienda-clave { font-size:12.5px; color:var(--gris); margin-top:2px; }
   .tienda-clave strong { color:#333; letter-spacing:0.3px; }
   .tienda-links { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .tienda-links a { font-size:12.5px; background:var(--verde-claro); color:var(--verde-oscuro); padding:6px 10px; border-radius:8px; text-decoration:none; font-weight:600; }
-  .badge-estado { font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; }
-  .badge-estado.activa { background:var(--verde-claro); color:var(--verde-oscuro); }
-  .badge-estado.inactiva { background:#f1f1f1; color:var(--gris); }
-  .btn-toggle-estado { border:none; padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; background:#f1f1f1; color:var(--gris); margin-left:auto; }
+  .estado-switch-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; }
+  .estado-switch-label { font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--gris); }
+  .estado-switch-label.activa { color:var(--verde-oscuro); }
+  .estado-switch { width:44px; height:26px; border-radius:999px; border:none; background:#e5e7eb; position:relative; cursor:pointer; padding:0; transition:background .15s ease; flex-shrink:0; }
+  .estado-switch.activa { background:var(--verde); }
+  .estado-switch::before { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .15s ease; }
+  .estado-switch.activa::before { transform:translateX(18px); }
+  .btn-eliminar-tienda { position:absolute; top:10px; right:10px; border:none; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; }
+  .btn-eliminar-tienda:hover { background:#fdeaea; color:var(--rojo); }
   .mensaje-ok { background:var(--verde-claro); color:var(--verde-oscuro); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
   .mensaje-error { background:#fdeaea; color:var(--rojo); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-eliminar { background:#fff; border-radius:14px; padding:22px; max-width:380px; width:100%; }
+  .modal-eliminar h3 { margin:0 0 8px; color:var(--rojo); }
+  .modal-eliminar p { font-size:13.5px; color:var(--gris); line-height:1.5; margin:0 0 12px; }
+  .modal-eliminar p strong { color:var(--texto); }
+  .modal-eliminar input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); margin-bottom:14px; }
+  .modal-eliminar-acciones { display:flex; gap:10px; }
+  .modal-eliminar-acciones button { flex:1; padding:11px; border-radius:8px; border:none; font-weight:700; font-size:13.5px; }
+  .btn-modal-cancelar { background:#f1f1f1; color:var(--gris); }
+  .btn-modal-confirmar { background:var(--rojo); color:#fff; }
+  .btn-modal-confirmar:disabled { opacity:.5; }
 </style>
 </head>
 <body>
@@ -78,6 +94,20 @@
       <h3>Verdulerías existentes</h3>
       <div id="lista-tiendas"></div>
     </main>
+  </div>
+
+  <!-- Modal confirmación de eliminación -->
+  <div id="modal-eliminar" class="modal-overlay oculto">
+    <div class="modal-eliminar">
+      <h3>Eliminar verdulería</h3>
+      <p>Esta acción es <strong>permanente</strong>. Se va a borrar la verdulería <strong id="modal-eliminar-nombre"></strong> junto con todo su catálogo, clientes y pedidos. No se puede deshacer.</p>
+      <p>Para confirmar, escribí el nombre exacto de la verdulería:</p>
+      <input id="modal-eliminar-input" type="text" autocomplete="off" />
+      <div class="modal-eliminar-acciones">
+        <button type="button" id="modal-eliminar-cancelar" class="btn-modal-cancelar">Cancelar</button>
+        <button type="button" id="modal-eliminar-confirmar" class="btn-modal-confirmar" disabled>Eliminar definitivamente</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="superadmin.js"></script>

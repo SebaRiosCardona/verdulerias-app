@@ -1,9 +1,9 @@
 :root {
-  --verde: #3a7d44;
-  --verde-oscuro: #2b5e33;
-  --verde-claro: #eaf5ea;
-  --crema: #fdf9f1;
-  --naranja: #e8912d;
+  --verde: #204c30;
+  --verde-oscuro: #163a22;
+  --verde-claro: #e9f3ea;
+  --crema: #f4f2ee;
+  --naranja: #e2694f;
   --rojo: #d9483c;
   --gris: #6b7280;
   --gris-claro: #e5e7eb;
@@ -87,7 +87,7 @@ header .subtitulo {
   font-size: 12px;
   opacity: .85;
 }
-#btn-salir, #btn-salir-2, #btn-ver-compras, #btn-volver-catalogo {
+#btn-salir, #btn-salir-2, #btn-ver-compras, #btn-volver-catalogo, #btn-salir-admin, #btn-salir-superadmin {
   background: rgba(255,255,255,.18);
   color: #fff;
   border: none;
@@ -126,7 +126,8 @@ header .subtitulo {
   background: var(--crema);
   padding: 24px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 .card-login {
   background: #fff;
@@ -136,6 +137,37 @@ header .subtitulo {
   width: 100%;
   height: fit-content;
   box-shadow: 0 4px 18px rgba(0,0,0,.08);
+}
+.info-beneficios {
+  max-width: 360px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 4px 4px 0;
+  color: var(--gris);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.info-beneficios-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--verde-oscuro);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin: 0 0 6px;
+}
+.info-beneficios p {
+  margin: 0 0 12px;
+}
+.info-beneficios strong {
+  color: var(--texto);
+}
+.info-beneficios ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .card-login label {
   display: block;
