@@ -22,4 +22,4 @@ export const TIENDA_POR_DEFECTO = "demo";
 // Contraseña del super-admin (para crear/gestionar verdulerías más adelante).
 // Cada verdulería además tiene su propio "adminPassword" guardado en su
 // documento de Firestore (verdulerias/{tiendaId}.adminPassword).
-export const SUPERADMIN_PASSWORD = "CAMBIAR_ESTA_PASSWORD";
+export const SUPERADMIN_PASSWORD = "Seba1357";

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Súper Admin — Verdulerías</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .admin-login { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--verde); }
+  main { padding:14px 16px 60px; max-width:640px; margin:auto; }
+  .form-nueva-tienda { background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; }
+  .form-nueva-tienda label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
+  .form-nueva-tienda input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .form-nueva-tienda button { margin-top:14px; width:100%; padding:12px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
+  .ayuda-slug { font-size:11.5px; color:var(--gris); margin-top:4px; }
+  .tienda-card { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; }
+  .tienda-header { display:flex; justify-content:space-between; align-items:center; }
+  .tienda-nombre { font-weight:700; }
+  .tienda-slug { font-size:12px; color:var(--gris); }
+  .tienda-links { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .tienda-links a { font-size:12.5px; background:var(--verde-claro); color:var(--verde-oscuro); padding:6px 10px; border-radius:8px; text-decoration:none; font-weight:600; }
+  .badge-estado { font-size:11px; font-weight:700; padding:3px 8px; border-radius:6px; }
+  .badge-estado.activa { background:var(--verde-claro); color:var(--verde-oscuro); }
+  .badge-estado.inactiva { background:#f1f1f1; color:var(--gris); }
+  .btn-toggle-estado { border:none; padding:6px 10px; border-radius:8px; font-size:12px; font-weight:600; background:#f1f1f1; color:var(--gris); margin-left:auto; }
+  .mensaje-ok { background:var(--verde-claro); color:var(--verde-oscuro); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
+  .mensaje-error { background:#fdeaea; color:var(--rojo); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
+</style>
+</head>
+<body>
+
+  <div id="pantalla-carga">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Login super-admin -->
+  <div id="vista-login-superadmin" class="admin-login oculto">
+    <form id="form-login-superadmin" class="card-login" style="width:320px;">
+      <h2 style="margin:0 0 4px;color:var(--verde-oscuro);">Súper Admin</h2>
+      <p style="font-size:13px;color:var(--gris);margin:0 0 6px;">Alta y gestión de verdulerías</p>
+      <label>Contraseña</label>
+      <input id="input-password-superadmin" type="password" required />
+      <button type="submit">Entrar</button>
+      <p id="error-login-superadmin" class="oculto" style="color:var(--rojo);font-size:13px;margin-top:10px;"></p>
+    </form>
+  </div>
+
+  <!-- Panel -->
+  <div id="vista-panel" class="oculto">
+    <header>
+      <div>
+        <h1>Súper Admin</h1>
+        <div class="subtitulo">Verdulerías</div>
+      </div>
+      <button id="btn-salir-superadmin">Salir</button>
+    </header>
+
+    <main>
+      <div id="mensaje-resultado"></div>
+
+      <div class="form-nueva-tienda">
+        <h3 style="margin:0;">Nueva verdulería</h3>
+        <label>Nombre</label>
+        <input id="nt-nombre" type="text" placeholder="Ej: Verdulería Don José" />
+        <label>Link (se genera solo, lo podés editar)</label>
+        <input id="nt-slug" type="text" placeholder="Ej: don-jose" />
+        <div class="ayuda-slug" id="ayuda-slug"></div>
+        <label>Contraseña de admin para esta verdulería</label>
+        <input id="nt-password" type="text" placeholder="Ej: dj2026" />
+        <button id="btn-crear-tienda">Crear verdulería (con catálogo de ejemplo)</button>
+      </div>
+
+      <h3>Verdulerías existentes</h3>
+      <div id="lista-tiendas"></div>
+    </main>
+  </div>
+
+  <script type="module" src="superadmin.js"></script>
+</body>
+</html>
