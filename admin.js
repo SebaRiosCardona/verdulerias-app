@@ -17,6 +17,18 @@ const CLAVE_SESION_ADMIN = `verduleria_admin_${tiendaId}`;
 
 const el = (id) => document.getElementById(id);
 
+const RANGO_DIACRITICOS = new RegExp("[̀-ͯ]", "g");
+
+function slugify(texto) {
+  return texto
+    .toString()
+    .normalize("NFD").replace(RANGO_DIACRITICOS, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function formatoMoneda(valor) {
   return "$" + Math.round(valor).toLocaleString("es-AR");
 }
@@ -51,9 +63,12 @@ btnTogglePasswordAdmin.addEventListener("click", () => {
 
 let tiendaInfo = null;
 let productosCache = [];
-let clientesCache = [];
 let pedidosCache = [];
-let filtroClienteId = "";
+let filtroTextoCliente = "";
+let filtroPagado = "";
+let filtroEntregado = "";
+let filtroPagadoHoy = "";
+let filtroEntregadoHoy = "";
 
 init();
 
@@ -111,10 +126,9 @@ btnSalirAdmin.addEventListener("click", () => {
 
 async function mostrarPanel() {
   vistaPanel.classList.remove("oculto");
-  await Promise.all([cargarProductos(), cargarClientes(), cargarPedidos()]);
-  renderTabPedidos();
+  await Promise.all([cargarProductos(), cargarPedidos()]);
+  renderTodo();
   renderTabProductos();
-  renderTabClientes();
 }
 
 // ---------------------------------------------------------------
@@ -124,7 +138,7 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("activo"));
     btn.classList.add("activo");
-    ["pedidos", "productos", "clientes"].forEach((t) => {
+    ["hoy", "pedidos", "productos"].forEach((t) => {
       el(`tab-${t}`).classList.toggle("oculto", t !== btn.dataset.tab);
     });
   });
@@ -139,12 +153,6 @@ async function cargarProductos() {
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
-async function cargarClientes() {
-  const snap = await getDocs(collection(db, "verdulerias", tiendaId, "clientes"));
-  clientesCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-}
-
 async function cargarPedidos() {
   const snap = await getDocs(collection(db, "verdulerias", tiendaId, "pedidos"));
   pedidosCache = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -152,50 +160,114 @@ async function cargarPedidos() {
 }
 
 // ---------------------------------------------------------------
-// Tab Pedidos
+// Tab Hoy
 // ---------------------------------------------------------------
-function renderTabPedidos() {
-  const select = el("select-filtro-cliente");
-  select.innerHTML = `<option value="">Todos los clientes</option>` +
-    clientesCache.map((c) => `<option value="${c.id}">${c.nombre} ${c.apellido}</option>`).join("");
-  select.value = filtroClienteId;
-  select.onchange = () => { filtroClienteId = select.value; renderListaPedidos(); };
+function esDeHoy(fechaIso) {
+  const fecha = new Date(fechaIso);
+  const hoy = new Date();
+  return fecha.toDateString() === hoy.toDateString();
+}
 
-  el("btn-marcar-vistos").onclick = async () => {
-    const noVistos = pedidosCache.filter((p) => !p.vistoPorAdmin);
+function renderTabHoy() {
+  const selectPagadoHoy = el("select-filtro-pagado-hoy");
+  selectPagadoHoy.value = filtroPagadoHoy;
+  selectPagadoHoy.onchange = () => { filtroPagadoHoy = selectPagadoHoy.value; renderTabHoy(); };
+
+  const selectEntregadoHoy = el("select-filtro-entregado-hoy");
+  selectEntregadoHoy.value = filtroEntregadoHoy;
+  selectEntregadoHoy.onchange = () => { filtroEntregadoHoy = selectEntregadoHoy.value; renderTabHoy(); };
+
+  el("btn-marcar-vistos-hoy").onclick = async () => {
+    const deHoy = pedidosCache.filter((p) => esDeHoy(p.fecha));
+    const noVistos = deHoy.filter((p) => !p.vistoPorAdmin);
     for (const p of noVistos) {
       await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", p.id), { vistoPorAdmin: true });
       p.vistoPorAdmin = true;
     }
-    renderListaPedidos();
+    renderTodo();
   };
 
-  renderResumenSaldos();
-  renderListaPedidos();
+  const pedidosHoy = pedidosCache.filter((p) => esDeHoy(p.fecha));
+  let lista = pedidosHoy;
+  if (filtroPagadoHoy) lista = lista.filter((p) => (filtroPagadoHoy === "si") === !!p.pagado);
+  if (filtroEntregadoHoy) lista = lista.filter((p) => (filtroEntregadoHoy === "si") === !!p.entregado);
+
+  renderResumenSaldos("resumen-saldos-hoy", pedidosHoy);
+  renderListaPedidosEn("lista-pedidos-hoy", lista, renderTodo, "hoy");
 }
 
-function renderResumenSaldos() {
+// ---------------------------------------------------------------
+// Tab Pedidos (todos)
+// ---------------------------------------------------------------
+function renderTabPedidos() {
+  const inputBuscarCliente = el("input-buscar-cliente");
+  inputBuscarCliente.value = filtroTextoCliente;
+  inputBuscarCliente.oninput = () => { filtroTextoCliente = inputBuscarCliente.value; renderTabPedidos(); };
+
+  const selectPagado = el("select-filtro-pagado");
+  selectPagado.value = filtroPagado;
+  selectPagado.onchange = () => { filtroPagado = selectPagado.value; renderTabPedidos(); };
+
+  const selectEntregado = el("select-filtro-entregado");
+  selectEntregado.value = filtroEntregado;
+  selectEntregado.onchange = () => { filtroEntregado = selectEntregado.value; renderTabPedidos(); };
+
+  el("btn-marcar-vistos").onclick = async () => {
+    const historial = pedidosCache.filter((p) => !esDeHoy(p.fecha));
+    const noVistos = historial.filter((p) => !p.vistoPorAdmin);
+    for (const p of noVistos) {
+      await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", p.id), { vistoPorAdmin: true });
+      p.vistoPorAdmin = true;
+    }
+    renderTodo();
+  };
+
+  let pedidosTexto = pedidosCache.filter((p) => !esDeHoy(p.fecha));
+  if (filtroTextoCliente.trim()) {
+    const texto = slugify(filtroTextoCliente);
+    pedidosTexto = pedidosTexto.filter((p) => slugify(p.clienteNombre || "").includes(texto));
+  }
+
+  let lista = pedidosTexto;
+  if (filtroPagado) lista = lista.filter((p) => (filtroPagado === "si") === !!p.pagado);
+  if (filtroEntregado) lista = lista.filter((p) => (filtroEntregado === "si") === !!p.entregado);
+
+  renderResumenSaldos("resumen-saldos", pedidosTexto);
+  renderListaPedidosEn("lista-pedidos-admin", lista, renderTodo, "pedidos");
+}
+
+function renderTodo() {
+  renderTabHoy();
+  renderTabPedidos();
+}
+
+// ---------------------------------------------------------------
+// Render genérico (compartido entre tabs Hoy y Todos)
+// ---------------------------------------------------------------
+function renderResumenSaldos(contenedorId, lista) {
   const saldos = {};
-  pedidosCache.filter((p) => !p.pagado).forEach((p) => {
+  lista.filter((p) => !p.pagado).forEach((p) => {
     saldos[p.clienteNombre] = (saldos[p.clienteNombre] || 0) + p.total;
   });
   const entradas = Object.entries(saldos);
-  const resumen = el("resumen-saldos");
+  const resumen = el(contenedorId);
   if (entradas.length === 0) {
-    resumen.innerHTML = `<strong>Sin saldos pendientes 🎉</strong>`;
+    resumen.className = "resumen-saldos sin-saldos";
+    resumen.innerHTML = `<strong>🎉 Sin saldos pendientes</strong>`;
     return;
   }
-  resumen.innerHTML = `<strong>Saldo pendiente por cliente</strong>` +
+  resumen.className = "resumen-saldos";
+  resumen.innerHTML = `<strong>💸 Pedidos no abonados</strong>` +
     entradas.map(([nombre, monto]) => `<div class="fila-saldo"><span>${nombre}</span><span>${formatoMoneda(monto)}</span></div>`).join("");
 }
 
-function renderListaPedidos() {
-  const contenedor = el("lista-pedidos-admin");
-  let lista = pedidosCache;
-  if (filtroClienteId) lista = lista.filter((p) => p.clienteId === filtroClienteId);
+function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
+  const contenedor = el(contenedorId);
 
   const nuevos = lista.filter((p) => !p.vistoPorAdmin).length;
-  document.querySelector('[data-tab="pedidos"]').textContent = nuevos > 0 ? `Pedidos (${nuevos})` : "Pedidos";
+  const tabBtn = document.querySelector(`[data-tab="${nombreTab}"]`);
+  const etiquetaBase = nombreTab === "hoy" ? "Pedidos de hoy" : "Historial de pedidos";
+  tabBtn.textContent = nuevos > 0 ? `${etiquetaBase} (${nuevos})` : etiquetaBase;
 
   if (lista.length === 0) {
     contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">No hay pedidos.</p>`;
@@ -233,7 +305,7 @@ function renderListaPedidos() {
       if (!pedido.vistoPorAdmin) {
         await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", id), { vistoPorAdmin: true });
         pedido.vistoPorAdmin = true;
-        renderListaPedidos();
+        onCambio();
       }
     });
 
@@ -246,14 +318,12 @@ function renderListaPedidos() {
           const nuevoValor = !pedido[campo];
           await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", id), { [campo]: nuevoValor });
           pedido[campo] = nuevoValor;
-          renderResumenSaldos();
-          renderListaPedidos();
+          onCambio();
         } else if (accion === "borrar") {
           if (confirm(`¿Borrar el pedido de ${pedido.clienteNombre}?`)) {
             await deleteDoc(doc(db, "verdulerias", tiendaId, "pedidos", id));
             pedidosCache = pedidosCache.filter((p) => p.id !== id);
-            renderResumenSaldos();
-            renderListaPedidos();
+            onCambio();
           }
         }
       });
@@ -324,26 +394,4 @@ function renderListaProductosAdmin() {
       producto.activo = activo;
     });
   });
-}
-
-// ---------------------------------------------------------------
-// Tab Clientes
-// ---------------------------------------------------------------
-function renderTabClientes() {
-  const contenedor = el("lista-clientes-admin");
-  if (clientesCache.length === 0) {
-    contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">Todavía no se registró ningún cliente.</p>`;
-    return;
-  }
-  contenedor.innerHTML = clientesCache.map((c) => {
-    const pedidosCliente = pedidosCache.filter((p) => p.clienteId === c.id).length;
-    return `
-      <div class="producto-admin">
-        <div>
-          <div style="font-weight:600;">${c.nombre} ${c.apellido}</div>
-          <div style="font-size:12px;color:var(--gris);">${pedidosCliente} pedido(s)</div>
-        </div>
-      </div>
-    `;
-  }).join("");
 }
