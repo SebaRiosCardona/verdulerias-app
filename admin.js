@@ -91,6 +91,11 @@ async function cargarTienda() {
     document.body.innerHTML = `<div style="padding:40px;text-align:center;">No existe la verdulería "${tiendaId}". Revisá el link (?tienda=...).</div>`;
     return;
   }
+  if (tiendaSnap.data().activa === false) {
+    pantallaCarga.classList.add("oculto");
+    document.body.innerHTML = `<div style="padding:40px;text-align:center;">Esta verdulería está desactivada. Contactá al súper admin para reactivarla.</div>`;
+    return;
+  }
   tiendaInfo = tiendaSnap.data();
   nombreTiendaAdmin.textContent = tiendaInfo.nombre || tiendaId;
   subtituloAdmin.textContent = tiendaInfo.nombre || tiendaId;
