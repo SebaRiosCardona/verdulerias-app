@@ -235,7 +235,7 @@ function cerrarSesion() {
 function mostrarCatalogo() {
   vistaCatalogo.classList.remove("oculto");
   vistaMisCompras.classList.add("oculto");
-  saludoCliente.textContent = `Hola, ${cliente.nombre} ${cliente.apellido}`;
+  saludoCliente.textContent = `Hola ${cliente.nombre}!`;
   renderProductos();
   actualizarBarraCarrito();
 }

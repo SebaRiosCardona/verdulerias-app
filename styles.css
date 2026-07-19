@@ -87,7 +87,7 @@ header .subtitulo {
   font-size: 12px;
   opacity: .85;
 }
-#btn-salir, #btn-mis-compras, #btn-volver-catalogo {
+#btn-salir, #btn-salir-2, #btn-ver-compras, #btn-volver-catalogo {
   background: rgba(255,255,255,.18);
   color: #fff;
   border: none;
