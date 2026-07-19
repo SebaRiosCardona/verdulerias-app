@@ -198,6 +198,7 @@ function renderListaTiendas() {
         <div>
           <div class="tienda-nombre">${t.nombre}</div>
           <div class="tienda-slug">?tienda=${t.id}</div>
+          <div class="tienda-clave">Contraseña: <strong>${t.adminPassword || "—"}</strong></div>
         </div>
         <span class="badge-estado ${t.activa !== false ? "activa" : "inactiva"}">${t.activa !== false ? "ACTIVA" : "INACTIVA"}</span>
       </div>
