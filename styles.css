@@ -150,7 +150,20 @@ header .subtitulo {
   border-radius: 10px;
   border: 1px solid var(--gris-claro);
 }
-.card-login button {
+.card-login .btn-toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: auto;
+  margin-top: 0;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+}
+.card-login button:not(.btn-toggle-password) {
   width: 100%;
   margin-top: 20px;
   padding: 13px;

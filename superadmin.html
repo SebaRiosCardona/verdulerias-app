@@ -41,7 +41,10 @@
       <h2 style="margin:0 0 4px;color:var(--verde-oscuro);">Súper Admin</h2>
       <p style="font-size:13px;color:var(--gris);margin:0 0 6px;">Alta y gestión de verdulerías</p>
       <label>Contraseña</label>
-      <input id="input-password-superadmin" type="password" required />
+      <div style="position:relative;">
+        <input id="input-password-superadmin" type="password" required style="padding-right:44px;" />
+        <button type="button" id="toggle-password-superadmin" class="btn-toggle-password"></button>
+      </div>
       <button type="submit">Entrar</button>
       <p id="error-login-superadmin" class="oculto" style="color:var(--rojo);font-size:13px;margin-top:10px;"></p>
     </form>
