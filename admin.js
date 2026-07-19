@@ -277,19 +277,19 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
   contenedor.innerHTML = lista.map((p) => {
     const fecha = new Date(p.fecha);
     const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-    const itemsTexto = (p.items || []).map((it) => `${it.nombre} (${formatoKg(it.kg)})`).join(", ");
+    const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoKg(it.kg)}</li>`).join("");
     return `
       <div class="pedido-admin ${!p.vistoPorAdmin ? "nuevo" : ""}" data-id="${p.id}">
         <div style="display:flex;justify-content:space-between;">
           <strong>${p.clienteNombre}${!p.vistoPorAdmin ? '<span class="etiqueta-nuevo">NUEVO</span>' : ""}</strong>
           <span style="font-size:12px;color:var(--gris);">${fechaTexto}</span>
         </div>
-        <div style="font-size:13px;color:var(--gris);margin:6px 0;">${itemsTexto}</div>
+        <ul class="lista-items-pedido">${itemsHtml}</ul>
         <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}</div>
         <div style="font-weight:700;margin-top:4px;">Total: ${formatoMoneda(p.total)}</div>
         <div class="fila-acciones">
-          <button data-accion="pagado" class="${p.pagado ? "btn-toggle-si" : "btn-toggle-no"}">${p.pagado ? "✓ Pagado" : "Marcar pagado"}</button>
-          <button data-accion="entregado" class="${p.entregado ? "btn-toggle-si" : "btn-toggle-no"}">${p.entregado ? "✓ Entregado" : "Marcar entregado"}</button>
+          <button data-accion="pagado" class="${p.pagado ? "btn-toggle-si" : "btn-toggle-no"}">${p.pagado ? "Pagado" : "No pagado"}</button>
+          <button data-accion="entregado" class="${p.entregado ? "btn-toggle-si" : "btn-toggle-no"}">${p.entregado ? "Entregado" : "No entregado"}</button>
           <button data-accion="borrar" class="btn-borrar">Borrar</button>
         </div>
       </div>

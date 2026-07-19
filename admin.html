@@ -27,11 +27,13 @@
   .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; }
   .pedido-admin.nuevo { border:2px solid var(--rojo); }
   .etiqueta-nuevo { background:var(--rojo); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; margin-left:6px; }
+  .lista-items-pedido { list-style:none; margin:8px 0; padding:0; font-size:13px; color:var(--gris); display:flex; flex-direction:column; gap:3px; }
+  .lista-items-pedido li::before { content:"• "; color:var(--verde); }
   .fila-acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-  .fila-acciones button { border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600; }
+  .fila-acciones button { border:none; padding:5px 10px; border-radius:14px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; }
   .btn-toggle-si { background:var(--verde-claro); color:var(--verde-oscuro); }
-  .btn-toggle-no { background:#f1f1f1; color:var(--gris); }
-  .btn-borrar { background:#fdeaea; color:var(--rojo); margin-left:auto; }
+  .btn-toggle-no { background:#fdeaea; color:var(--rojo); }
+  .btn-borrar { background:#f1f1f1; color:var(--gris); margin-left:auto; text-transform:none; letter-spacing:normal; border-radius:8px; }
   .producto-admin { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
   .producto-admin input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
   .switch { position:relative; width:44px; height:24px; }
