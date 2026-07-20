@@ -25,18 +25,29 @@
   .btn-toggle-si { background:var(--verde-claro); color:var(--verde-oscuro); }
   .btn-toggle-no { background:#fdeaea; color:var(--rojo); }
   .btn-borrar { background:#f1f1f1; color:var(--gris); margin-left:auto; text-transform:none; letter-spacing:normal; border-radius:8px; }
-  .producto-admin { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
+  .producto-admin { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .producto-admin input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
-  .switch { position:relative; width:44px; height:24px; }
+  .switch { position:relative; width:44px; height:24px; flex-shrink:0; }
   .switch input { opacity:0; width:0; height:0; }
   .slider { position:absolute; inset:0; background:#f1f1f1; border-radius:24px; transition:.2s; cursor:pointer; }
   .slider:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   input:checked + .slider { background:var(--verde); }
   input:checked + .slider:before { transform:translateX(20px); }
+  .btn-eliminar-producto { border:none; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; flex-shrink:0; }
+  .btn-eliminar-producto:hover { background:#fdeaea; color:var(--rojo); }
+  .btn-agregar-producto-nuevo { width:100%; padding:12px; background:var(--verde); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:14px; margin-bottom:12px; }
   .form-nuevo-producto { background:#fff; border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .form-nuevo-producto label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:8px 0 4px; }
   .form-nuevo-producto input, .form-nuevo-producto select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
   .form-nuevo-producto button { margin-top:12px; width:100%; padding:11px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+  .modal-producto { background:#fff; border-radius:16px; padding:22px; max-width:380px; width:100%; }
+  .modal-producto h3 { margin:0 0 14px; color:var(--verde-oscuro); }
+  .modal-producto label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
+  .modal-producto input, .modal-producto select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .modal-producto-acciones { display:flex; gap:10px; margin-top:16px; }
+  .modal-producto-acciones button { flex:1; padding:11px; border-radius:8px; border:none; font-weight:700; font-size:13.5px; }
+  .btn-modal-cancelar { background:#f1f1f1; color:var(--gris); }
 </style>
 </head>
 <body>
@@ -115,17 +126,13 @@
 
       <!-- Tab Productos -->
       <section id="tab-productos" class="oculto">
-        <div class="form-nuevo-producto">
-          <label>Nombre</label>
-          <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
-          <label>Categoría</label>
-          <select id="np-categoria">
-            <option value="verdura">Verdura</option>
-            <option value="fruta">Fruta</option>
-          </select>
-          <label>Precio por kg</label>
-          <input id="np-precio" type="number" min="0" step="10" placeholder="Ej: 1200" />
-          <button id="btn-agregar-producto">Agregar producto</button>
+        <button class="btn-agregar-producto-nuevo" id="btn-abrir-modal-producto">+ Agregar producto</button>
+        <div class="buscador-cliente" style="margin-bottom:12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input id="input-buscar-producto" type="text" placeholder="Buscar fruta o verdura..." />
         </div>
         <div id="lista-productos-admin"></div>
       </section>
@@ -151,6 +158,26 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Modal agregar producto -->
+  <div id="modal-producto" class="modal-overlay oculto">
+    <div class="modal-producto">
+      <h3>Nuevo producto</h3>
+      <label>Nombre</label>
+      <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
+      <label>Categoría</label>
+      <select id="np-categoria">
+        <option value="verdura">Verdura</option>
+        <option value="fruta">Fruta</option>
+      </select>
+      <label>Precio por kg</label>
+      <input id="np-precio" type="number" min="0" step="10" placeholder="Ej: 1200" />
+      <div class="modal-producto-acciones">
+        <button type="button" id="modal-producto-cancelar" class="btn-modal-cancelar">Cancelar</button>
+        <button type="button" id="btn-agregar-producto" style="background:var(--verde);color:#fff;">Agregar producto</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="admin.js"></script>

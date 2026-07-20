@@ -324,7 +324,25 @@ function renderTabConfiguracion() {
 // ---------------------------------------------------------------
 // Tab Productos
 // ---------------------------------------------------------------
+let filtroTextoProducto = "";
+
 function renderTabProductos() {
+  const modalProducto = el("modal-producto");
+  const inputBuscarProducto = el("input-buscar-producto");
+  inputBuscarProducto.value = filtroTextoProducto;
+  inputBuscarProducto.oninput = () => { filtroTextoProducto = inputBuscarProducto.value; renderListaProductosAdmin(); };
+
+  el("btn-abrir-modal-producto").onclick = () => {
+    el("np-nombre").value = "";
+    el("np-categoria").value = "verdura";
+    el("np-precio").value = "";
+    modalProducto.classList.remove("oculto");
+  };
+
+  el("modal-producto-cancelar").onclick = () => {
+    modalProducto.classList.add("oculto");
+  };
+
   el("btn-agregar-producto").onclick = async () => {
     const nombre = el("np-nombre").value.trim();
     const categoria = el("np-categoria").value;
@@ -338,20 +356,27 @@ function renderTabProductos() {
     });
     productosCache.push({ id: ref.id, nombre, categoria, precioPorKg: precio, activo: true });
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-    el("np-nombre").value = "";
-    el("np-precio").value = "";
+    modalProducto.classList.add("oculto");
     renderListaProductosAdmin();
   };
+
   renderListaProductosAdmin();
 }
 
 function renderListaProductosAdmin() {
   const contenedor = el("lista-productos-admin");
-  if (productosCache.length === 0) {
-    contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">Todavía no cargaste productos.</p>`;
+
+  let lista = productosCache;
+  if (filtroTextoProducto.trim()) {
+    const texto = slugify(filtroTextoProducto);
+    lista = lista.filter((p) => slugify(p.nombre).includes(texto));
+  }
+
+  if (lista.length === 0) {
+    contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">${productosCache.length === 0 ? "Todavía no cargaste productos." : "No encontramos productos con ese nombre."}</p>`;
     return;
   }
-  contenedor.innerHTML = productosCache.map((p) => `
+  contenedor.innerHTML = lista.map((p) => `
     <div class="producto-admin" data-id="${p.id}">
       <div>
         <div style="font-weight:600;">${p.nombre} <span style="font-size:11px;color:var(--gris);">(${p.categoria})</span></div>
@@ -363,6 +388,9 @@ function renderListaProductosAdmin() {
           <input type="checkbox" data-campo="activo" ${p.activo !== false ? "checked" : ""} />
           <span class="slider"></span>
         </label>
+        <button class="btn-eliminar-producto" data-accion="eliminar" title="Eliminar producto" aria-label="Eliminar producto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+        </button>
       </div>
     </div>
   `).join("");
@@ -382,6 +410,14 @@ function renderListaProductosAdmin() {
       const activo = ev.target.checked;
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { activo });
       producto.activo = activo;
+    });
+
+    row.querySelector('[data-accion="eliminar"]').addEventListener("click", async () => {
+      if (confirm(`¿Eliminar "${producto.nombre}" del catálogo?`)) {
+        await deleteDoc(doc(db, "verdulerias", tiendaId, "productos", id));
+        productosCache = productosCache.filter((p) => p.id !== id);
+        renderListaProductosAdmin();
+      }
     });
   });
 }
