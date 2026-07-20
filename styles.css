@@ -2,7 +2,7 @@
   --verde: #204c30;
   --verde-oscuro: #163a22;
   --verde-claro: #e9f3ea;
-  --crema: #f4f2ee;
+  --crema: #eae7e0;
   --naranja: #e2694f;
   --rojo: #d9483c;
   --gris: #6b7280;
@@ -261,7 +261,7 @@ main {
   border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  box-shadow: 0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10);
 }
 .producto-info { flex: 1; min-width: 0; }
 .producto-nombre {
@@ -360,7 +360,7 @@ main {
   border-radius: 14px;
   padding: 16px;
   margin-bottom: 14px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  box-shadow: 0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10);
 }
 .pedido-card.recien-confirmado {
   border: 2px solid var(--verde);
@@ -372,23 +372,15 @@ main {
   margin-bottom: 10px;
 }
 .pedido-fecha { font-size: 13px; color: var(--gris); }
-.badges { display: flex; gap: 6px; }
-.badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-.badge.pagado { background: var(--verde-claro); color: var(--verde-oscuro); }
-.badge.no-pagado { background: #fdeaea; color: var(--rojo); }
-.badge.entregado { background: #e6f0fb; color: #1d5fa8; }
-.badge.no-entregado { background: #f1f1f1; color: var(--gris); }
 .pedido-items { font-size: 14px; margin: 8px 0; }
 .pedido-item-fila {
   display: flex;
   justify-content: space-between;
   padding: 4px 0;
   border-bottom: 1px dashed var(--gris-claro);
+}
+.pedido-item-fila:last-child {
+  border-bottom: none;
 }
 .pedido-totales {
   margin-top: 10px;
@@ -407,6 +399,11 @@ main {
   padding: 8px 10px;
   border-radius: 8px;
 }
+.nota-pago a {
+  color: var(--verde-oscuro);
+  font-weight: 700;
+  text-decoration: underline;
+}
 .mensaje-confirmacion {
   position: fixed;
   top: 50%;
@@ -419,4 +416,96 @@ main {
   font-weight: 700;
   z-index: 200;
   text-align: center;
+}
+
+/* ---------- Modal confirmación de pedido ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+.modal-confirmar-pedido {
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-confirmar-pedido h3 {
+  margin: 0 0 6px;
+  color: var(--verde-oscuro);
+}
+.modal-confirmar-pedido > p {
+  font-size: 13.5px;
+  color: var(--gris);
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+.modal-confirmar-items {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.modal-confirmar-totales {
+  border-top: 1px solid var(--gris-claro);
+  padding-top: 10px;
+  font-size: 14px;
+}
+.modal-confirmar-momento {
+  border-top: 1px solid var(--gris-claro);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.modal-confirmar-momento label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gris);
+  margin-bottom: 8px;
+}
+.momento-opciones {
+  display: flex;
+  gap: 8px;
+}
+.momento-opcion {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--gris-claro);
+  background: #fff;
+  color: var(--texto);
+  font-size: 13px;
+  font-weight: 600;
+}
+.momento-opcion.activo {
+  background: var(--verde-claro);
+  border-color: var(--verde);
+  color: var(--verde-oscuro);
+}
+.modal-confirmar-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.modal-confirmar-acciones button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.btn-modal-cancelar {
+  background: #f1f1f1;
+  color: var(--gris);
+}
+.btn-modal-enviar {
+  background: var(--verde);
+  color: #fff;
 }

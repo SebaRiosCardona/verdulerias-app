@@ -113,6 +113,28 @@
     <main id="lista-pedidos" style="padding-bottom:40px;"></main>
   </div>
 
+  <!-- Modal confirmación de pedido -->
+  <div id="modal-confirmar-pedido" class="modal-overlay oculto">
+    <div class="modal-confirmar-pedido">
+      <h3>Confirmá tu pedido</h3>
+      <p>Revisá que todo esté correcto. Una vez enviado, recibiremos tu pedido por WhatsApp.</p>
+      <div id="modal-confirmar-items" class="modal-confirmar-items"></div>
+      <div id="modal-confirmar-totales" class="modal-confirmar-totales"></div>
+      <div class="modal-confirmar-momento">
+        <label>¿En qué momento del día pasás a buscarlo?</label>
+        <div class="momento-opciones">
+          <button type="button" class="momento-opcion" data-momento="manana">🌅 Mañana</button>
+          <button type="button" class="momento-opcion" data-momento="tarde">☀️ Tarde</button>
+          <button type="button" class="momento-opcion" data-momento="noche">🌙 Noche</button>
+        </div>
+      </div>
+      <div class="modal-confirmar-acciones">
+        <button type="button" id="modal-confirmar-cancelar" class="btn-modal-cancelar">Seguir editando</button>
+        <button type="button" id="modal-confirmar-enviar" class="btn-modal-enviar">Enviar pedido</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>

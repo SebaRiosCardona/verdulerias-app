@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc,
-  query, where, orderBy, onSnapshot
+  query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ---------------------------------------------------------------
@@ -76,7 +76,6 @@ const saludoClienteCompras = el("saludo-cliente-compras");
 const inputBuscar = el("input-buscar");
 const listaProductos = el("lista-productos");
 
-const barraCarrito = el("barra-carrito");
 const barraDescuento = el("barra-descuento");
 const barraKg = el("barra-kg");
 const barraTotal = el("barra-total");
@@ -86,6 +85,23 @@ const btnVerCompras = el("btn-ver-compras");
 const btnVolverCatalogo = el("btn-volver-catalogo");
 const btnSalir = el("btn-salir");
 const btnSalir2 = el("btn-salir-2");
+
+const modalConfirmarPedido = el("modal-confirmar-pedido");
+const modalConfirmarItems = el("modal-confirmar-items");
+const modalConfirmarTotales = el("modal-confirmar-totales");
+const modalConfirmarCancelar = el("modal-confirmar-cancelar");
+const modalConfirmarEnviar = el("modal-confirmar-enviar");
+const botonesMomento = document.querySelectorAll(".momento-opcion");
+
+const MOMENTOS_TEXTO = { manana: "Mañana", tarde: "Tarde", noche: "Noche" };
+let momentoSeleccionado = null;
+
+botonesMomento.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    momentoSeleccionado = btn.dataset.momento;
+    botonesMomento.forEach((b) => b.classList.toggle("activo", b === btn));
+  });
+});
 
 const listaPedidos = el("lista-pedidos");
 
@@ -337,12 +353,51 @@ function actualizarBarraCarrito() {
   btnConfirmar.disabled = pesoTotalKg <= 0;
 }
 
-btnConfirmar.addEventListener("click", async () => {
+btnConfirmar.addEventListener("click", () => {
   const resumen = calcularCarrito();
   if (resumen.pesoTotalKg <= 0) return;
+  abrirModalConfirmarPedido(resumen);
+});
 
-  btnConfirmar.disabled = true;
-  btnConfirmar.textContent = "Confirmando...";
+function abrirModalConfirmarPedido(resumen) {
+  modalConfirmarItems.innerHTML = resumen.items.map((it) => `
+    <div class="pedido-item-fila">
+      <span>${it.nombre} — ${formatoKg(it.kg)}</span>
+      <span>${formatoMoneda(it.subtotal)}</span>
+    </div>
+  `).join("");
+
+  modalConfirmarTotales.innerHTML = `
+    <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(resumen.subtotal)}</span></div>
+    ${resumen.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (10%)</span><span>-${formatoMoneda(resumen.descuentoMonto)}</span></div>` : ""}
+    <div class="fila-total a-pagar"><span>Total</span><span>${formatoMoneda(resumen.total)}</span></div>
+  `;
+
+  momentoSeleccionado = null;
+  botonesMomento.forEach((b) => b.classList.remove("activo"));
+
+  modalConfirmarEnviar.disabled = false;
+  modalConfirmarEnviar.textContent = "Enviar pedido";
+  modalConfirmarPedido.classList.remove("oculto");
+
+  modalConfirmarEnviar.onclick = () => {
+    if (!momentoSeleccionado) {
+      alert("Elegí en qué momento del día pasás a buscarlo.");
+      return;
+    }
+    enviarPedido(resumen);
+  };
+}
+
+function cerrarModalConfirmarPedido() {
+  modalConfirmarPedido.classList.add("oculto");
+}
+
+modalConfirmarCancelar.addEventListener("click", cerrarModalConfirmarPedido);
+
+async function enviarPedido(resumen) {
+  modalConfirmarEnviar.disabled = true;
+  modalConfirmarEnviar.textContent = "Enviando...";
 
   try {
     const pedidoRef = await addDoc(collection(db, "verdulerias", tiendaId, "pedidos"), {
@@ -354,23 +409,31 @@ btnConfirmar.addEventListener("click", async () => {
       descuentoAplicado: resumen.cumpleMinimo,
       descuentoMonto: resumen.descuentoMonto,
       total: resumen.total,
+      momentoRetiro: momentoSeleccionado,
       pagado: false,
       metodoPago: null,
       entregado: false,
+      armado: false,
       vistoPorAdmin: false,
       fecha: new Date().toISOString()
     });
 
     ultimoPedidoId = pedidoRef.id;
     carrito = {};
+
+    const linkWhatsApp = armarLinkWhatsApp(resumen, momentoSeleccionado);
+    if (linkWhatsApp) {
+      window.open(linkWhatsApp, "_blank");
+    }
+
+    cerrarModalConfirmarPedido();
     mostrarConfirmacion();
   } catch (e) {
     alert("No pudimos confirmar el pedido: " + e.message);
-  } finally {
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = "Confirmar pedido";
+    modalConfirmarEnviar.disabled = false;
+    modalConfirmarEnviar.textContent = "Enviar pedido";
   }
-});
+}
 
 function mostrarConfirmacion() {
   const mensaje = document.createElement("div");
@@ -409,6 +472,24 @@ async function mostrarMisCompras() {
   listaPedidos.innerHTML = pedidos.map(renderPedido).join("");
 }
 
+function armarLinkWhatsApp(p, momentoRetiro) {
+  const telefono = tiendaInfo?.telefonoContacto;
+  if (!telefono) return null;
+  const itemsTextoWhatsApp = (p.items || []).map((it) => `• ${it.nombre} — ${formatoKg(it.kg)}`).join("\n");
+  const lineasWhatsApp = [
+    "Hola! Te paso mi pedido para que lo confirmes:",
+    "",
+    itemsTextoWhatsApp,
+    "",
+    `Total: ${formatoMoneda(p.total)}`,
+  ];
+  if (momentoRetiro && MOMENTOS_TEXTO[momentoRetiro]) {
+    lineasWhatsApp.push(`Paso a buscarlo por la ${MOMENTOS_TEXTO[momentoRetiro]}`);
+  }
+  const mensajeWhatsApp = encodeURIComponent(lineasWhatsApp.join("\n"));
+  return `https://wa.me/54${telefono}?text=${mensajeWhatsApp}`;
+}
+
 function renderPedido(p) {
   const fecha = new Date(p.fecha);
   const fechaTexto = fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
@@ -423,14 +504,15 @@ function renderPedido(p) {
 
   const esReciente = p.id === ultimoPedidoId;
 
+  const linkWhatsApp = armarLinkWhatsApp(p, p.momentoRetiro);
+  const notaPago = linkWhatsApp
+    ? `Mandanos tu pedido a <a href="${linkWhatsApp}" target="_blank">WhatsApp</a>. Una vez que lo confirmemos, te pasamos el total y el alias para transferir.`
+    : `Esperá a que confirmemos tu pedido para recibir el total y el alias para transferir.`;
+
   return `
     <div class="pedido-card ${esReciente ? "recien-confirmado" : ""}">
       <div class="pedido-header">
         <div class="pedido-fecha">${fechaTexto} · ${formatoKg(p.pesoTotalKg)}</div>
-        <div class="badges">
-          <span class="badge ${p.pagado ? "pagado" : "no-pagado"}">${p.pagado ? "PAGADO" : "NO PAGADO"}</span>
-          <span class="badge ${p.entregado ? "entregado" : "no-entregado"}">${p.entregado ? "ENTREGADO" : "NO ENTREGADO"}</span>
-        </div>
       </div>
       <div class="pedido-items">${itemsHtml}</div>
       <div class="pedido-totales">
@@ -438,7 +520,7 @@ function renderPedido(p) {
         ${p.descuentoAplicado ? `<div class="fila-total ahorro"><span>Ahorraste (10%)</span><span>-${formatoMoneda(p.descuentoMonto)}</span></div>` : ""}
         <div class="fila-total a-pagar"><span>Total a pagar</span><span>${formatoMoneda(p.total)}</span></div>
       </div>
-      <div class="nota-pago">Podés abonar por transferencia o en efectivo al momento de retirar tu bolsón.</div>
+      <div class="nota-pago">${notaPago}</div>
     </div>
   `;
 }

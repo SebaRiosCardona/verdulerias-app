@@ -17,16 +17,7 @@
   .buscador-cliente input { border:none; outline:none; flex:1; background:transparent; font-size:14px; }
   .filtros-estado { display:flex; gap:8px; }
   .filtros-estado select { flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--gris-claro); background:#fff; font-size:13px; color:var(--texto); }
-  .resumen-saldos { background:#fdf1ee; border:1px solid #f7d9d1; border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:13px; }
-  .resumen-saldos strong { display:flex; align-items:center; gap:6px; color:var(--naranja); text-transform:uppercase; font-size:11px; letter-spacing:.04em; margin-bottom:6px; }
-  .resumen-saldos.sin-saldos { background:var(--verde-claro); border-color:var(--verde-claro); }
-  .resumen-saldos.sin-saldos strong { color:var(--verde-oscuro); }
-  .fila-saldo { display:flex; justify-content:space-between; padding:4px 0; border-top:1px dashed #f0c9bd; }
-  .fila-saldo:first-of-type { border-top:none; }
-  .fila-saldo span:last-child { font-weight:700; color:var(--naranja); }
-  .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; cursor:pointer; }
-  .pedido-admin.nuevo { border:2px solid var(--rojo); }
-  .etiqueta-nuevo { background:var(--rojo); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; margin-left:6px; }
+  .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .lista-items-pedido { list-style:none; margin:8px 0; padding:0; font-size:13px; color:var(--gris); display:flex; flex-direction:column; gap:3px; }
   .lista-items-pedido li::before { content:"• "; color:var(--verde); }
   .fila-acciones { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
@@ -34,7 +25,7 @@
   .btn-toggle-si { background:var(--verde-claro); color:var(--verde-oscuro); }
   .btn-toggle-no { background:#fdeaea; color:var(--rojo); }
   .btn-borrar { background:#f1f1f1; color:var(--gris); margin-left:auto; text-transform:none; letter-spacing:normal; border-radius:8px; }
-  .producto-admin { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+  .producto-admin { display:flex; align-items:center; justify-content:space-between; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .producto-admin input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
   .switch { position:relative; width:44px; height:24px; }
   .switch input { opacity:0; width:0; height:0; }
@@ -42,11 +33,10 @@
   .slider:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   input:checked + .slider { background:var(--verde); }
   input:checked + .slider:before { transform:translateX(20px); }
-  .form-nuevo-producto { background:#fff; border-radius:12px; padding:14px; margin-bottom:16px; }
+  .form-nuevo-producto { background:#fff; border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .form-nuevo-producto label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:8px 0 4px; }
   .form-nuevo-producto input, .form-nuevo-producto select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
   .form-nuevo-producto button { margin-top:12px; width:100%; padding:11px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
-  .btn-marcar-vistos { background:var(--verde-claro); color:var(--verde-oscuro); border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:600; margin-bottom:12px; }
 </style>
 </head>
 <body>
@@ -84,19 +74,14 @@
       <button class="tab-btn activo" data-tab="hoy">Pedidos de hoy</button>
       <button class="tab-btn" data-tab="pedidos">Historial de pedidos</button>
       <button class="tab-btn" data-tab="productos">Productos</button>
+      <button class="tab-btn" data-tab="configuracion">Configuración</button>
     </div>
 
     <main>
       <!-- Tab Hoy -->
       <section id="tab-hoy">
-        <button class="btn-marcar-vistos" id="btn-marcar-vistos-hoy">Marcar todos como vistos</button>
         <div class="filtros-pedidos">
           <div class="filtros-estado">
-            <select id="select-filtro-pagado-hoy">
-              <option value="">Pago: todos</option>
-              <option value="si">Pagado</option>
-              <option value="no">No pagado</option>
-            </select>
             <select id="select-filtro-entregado-hoy">
               <option value="">Entrega: todos</option>
               <option value="si">Entregado</option>
@@ -104,13 +89,11 @@
             </select>
           </div>
         </div>
-        <div class="resumen-saldos" id="resumen-saldos-hoy"></div>
         <div id="lista-pedidos-hoy"></div>
       </section>
 
       <!-- Tab Pedidos (todos) -->
       <section id="tab-pedidos" class="oculto">
-        <button class="btn-marcar-vistos" id="btn-marcar-vistos">Marcar todos como vistos</button>
         <div class="filtros-pedidos">
           <div class="buscador-cliente">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -120,11 +103,6 @@
             <input id="input-buscar-cliente" type="text" placeholder="Buscar por cliente..." />
           </div>
           <div class="filtros-estado">
-            <select id="select-filtro-pagado">
-              <option value="">Pago: todos</option>
-              <option value="si">Pagado</option>
-              <option value="no">No pagado</option>
-            </select>
             <select id="select-filtro-entregado">
               <option value="">Entrega: todos</option>
               <option value="si">Entregado</option>
@@ -132,7 +110,6 @@
             </select>
           </div>
         </div>
-        <div class="resumen-saldos" id="resumen-saldos"></div>
         <div id="lista-pedidos-admin"></div>
       </section>
 
@@ -151,6 +128,27 @@
           <button id="btn-agregar-producto">Agregar producto</button>
         </div>
         <div id="lista-productos-admin"></div>
+      </section>
+
+      <!-- Tab Configuración -->
+      <section id="tab-configuracion" class="oculto">
+        <div class="form-nuevo-producto">
+          <h3 style="margin:0;">Datos de la tienda</h3>
+          <label>Teléfono de contacto (WhatsApp)</label>
+          <input id="cfg-telefono" type="tel" placeholder="Ej: 1122334455" />
+          <button id="btn-guardar-telefono">Guardar teléfono</button>
+        </div>
+        <div class="form-nuevo-producto">
+          <h3 style="margin:0;">Cambiar contraseña</h3>
+          <label>Contraseña actual</label>
+          <input id="cfg-password-actual" type="password" autocomplete="off" />
+          <label>Contraseña nueva</label>
+          <input id="cfg-password-nueva" type="password" autocomplete="off" />
+          <label>Repetir contraseña nueva</label>
+          <input id="cfg-password-nueva-confirmar" type="password" autocomplete="off" />
+          <p id="cfg-password-error" class="oculto" style="color:var(--rojo);font-size:12.5px;margin:8px 0 0;"></p>
+          <button id="btn-cambiar-password">Cambiar contraseña</button>
+        </div>
       </section>
     </main>
   </div>

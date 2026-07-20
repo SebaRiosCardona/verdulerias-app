@@ -8,12 +8,12 @@
 <style>
   .admin-login { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--verde); }
   main { padding:14px 16px 60px; max-width:640px; margin:auto; }
-  .form-nueva-tienda { background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; }
+  .form-nueva-tienda { background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .form-nueva-tienda label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
   .form-nueva-tienda input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
   .form-nueva-tienda button { margin-top:14px; width:100%; padding:12px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
   .ayuda-slug { font-size:11.5px; color:var(--gris); margin-top:4px; }
-  .tienda-card { background:#fff; border-radius:12px; padding:14px 44px 14px 14px; margin-bottom:10px; position:relative; }
+  .tienda-card { background:#fff; border-radius:12px; padding:14px 44px 14px 14px; margin-bottom:10px; position:relative; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
   .tienda-header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
   .tienda-nombre { font-weight:700; }
   .tienda-slug { font-size:12px; color:var(--gris); }
@@ -28,8 +28,16 @@
   .estado-switch.activa { background:var(--verde); }
   .estado-switch::before { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .15s ease; }
   .estado-switch.activa::before { transform:translateX(18px); }
-  .btn-eliminar-tienda { position:absolute; top:10px; right:10px; border:none; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; }
+  .tienda-acciones-superiores { position:absolute; top:10px; right:10px; display:flex; gap:6px; }
+  .btn-editar-tienda, .btn-eliminar-tienda { border:none; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; }
+  .btn-editar-tienda:hover { background:var(--verde-claro); color:var(--verde-oscuro); }
   .btn-eliminar-tienda:hover { background:#fdeaea; color:var(--rojo); }
+  .modal-editar { background:#fff; border-radius:14px; padding:22px; max-width:380px; width:100%; }
+  .modal-editar h3 { margin:0 0 14px; color:var(--verde-oscuro); }
+  .modal-editar label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
+  .modal-editar input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .modal-editar-acciones { display:flex; gap:10px; margin-top:16px; }
+  .modal-editar-acciones button { flex:1; padding:11px; border-radius:8px; border:none; font-weight:700; font-size:13.5px; }
   .mensaje-ok { background:var(--verde-claro); color:var(--verde-oscuro); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
   .mensaje-error { background:#fdeaea; color:var(--rojo); padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:14px; }
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
@@ -88,12 +96,31 @@
         <div class="ayuda-slug" id="ayuda-slug"></div>
         <label>Contraseña de admin para esta verdulería</label>
         <input id="nt-password" type="text" placeholder="Ej: dj2026" />
+        <label>Teléfono de contacto (WhatsApp, opcional)</label>
+        <input id="nt-telefono" type="tel" placeholder="Ej: 1122334455" />
         <button id="btn-crear-tienda">Crear verdulería (con catálogo de ejemplo)</button>
       </div>
 
       <h3>Verdulerías existentes</h3>
       <div id="lista-tiendas"></div>
     </main>
+  </div>
+
+  <!-- Modal editar verdulería -->
+  <div id="modal-editar" class="modal-overlay oculto">
+    <div class="modal-editar">
+      <h3>Editar verdulería</h3>
+      <label>Nombre</label>
+      <input id="ed-nombre" type="text" />
+      <label>Contraseña de admin</label>
+      <input id="ed-password" type="text" />
+      <label>Teléfono de contacto (WhatsApp)</label>
+      <input id="ed-telefono" type="tel" placeholder="Ej: 1122334455" />
+      <div class="modal-editar-acciones">
+        <button type="button" id="modal-editar-cancelar" class="btn-modal-cancelar">Cancelar</button>
+        <button type="button" id="modal-editar-guardar" style="background:var(--verde);color:#fff;">Guardar cambios</button>
+      </div>
+    </div>
   </div>
 
   <!-- Modal confirmación de eliminación -->

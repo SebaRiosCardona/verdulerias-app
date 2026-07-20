@@ -17,6 +17,8 @@ const CLAVE_SESION_ADMIN = `verduleria_admin_${tiendaId}`;
 
 const el = (id) => document.getElementById(id);
 
+const MOMENTOS_TEXTO = { manana: "Mañana", tarde: "Tarde", noche: "Noche" };
+
 const RANGO_DIACRITICOS = new RegExp("[̀-ͯ]", "g");
 
 function slugify(texto) {
@@ -65,9 +67,7 @@ let tiendaInfo = null;
 let productosCache = [];
 let pedidosCache = [];
 let filtroTextoCliente = "";
-let filtroPagado = "";
 let filtroEntregado = "";
-let filtroPagadoHoy = "";
 let filtroEntregadoHoy = "";
 
 init();
@@ -134,6 +134,7 @@ async function mostrarPanel() {
   await Promise.all([cargarProductos(), cargarPedidos()]);
   renderTodo();
   renderTabProductos();
+  renderTabConfiguracion();
 }
 
 // ---------------------------------------------------------------
@@ -143,7 +144,7 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("activo"));
     btn.classList.add("activo");
-    ["hoy", "pedidos", "productos"].forEach((t) => {
+    ["hoy", "pedidos", "productos", "configuracion"].forEach((t) => {
       el(`tab-${t}`).classList.toggle("oculto", t !== btn.dataset.tab);
     });
   });
@@ -174,30 +175,13 @@ function esDeHoy(fechaIso) {
 }
 
 function renderTabHoy() {
-  const selectPagadoHoy = el("select-filtro-pagado-hoy");
-  selectPagadoHoy.value = filtroPagadoHoy;
-  selectPagadoHoy.onchange = () => { filtroPagadoHoy = selectPagadoHoy.value; renderTabHoy(); };
-
   const selectEntregadoHoy = el("select-filtro-entregado-hoy");
   selectEntregadoHoy.value = filtroEntregadoHoy;
   selectEntregadoHoy.onchange = () => { filtroEntregadoHoy = selectEntregadoHoy.value; renderTabHoy(); };
 
-  el("btn-marcar-vistos-hoy").onclick = async () => {
-    const deHoy = pedidosCache.filter((p) => esDeHoy(p.fecha));
-    const noVistos = deHoy.filter((p) => !p.vistoPorAdmin);
-    for (const p of noVistos) {
-      await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", p.id), { vistoPorAdmin: true });
-      p.vistoPorAdmin = true;
-    }
-    renderTodo();
-  };
-
-  const pedidosHoy = pedidosCache.filter((p) => esDeHoy(p.fecha));
-  let lista = pedidosHoy;
-  if (filtroPagadoHoy) lista = lista.filter((p) => (filtroPagadoHoy === "si") === !!p.pagado);
+  let lista = pedidosCache.filter((p) => esDeHoy(p.fecha));
   if (filtroEntregadoHoy) lista = lista.filter((p) => (filtroEntregadoHoy === "si") === !!p.entregado);
 
-  renderResumenSaldos("resumen-saldos-hoy", pedidosHoy);
   renderListaPedidosEn("lista-pedidos-hoy", lista, renderTodo, "hoy");
 }
 
@@ -209,35 +193,17 @@ function renderTabPedidos() {
   inputBuscarCliente.value = filtroTextoCliente;
   inputBuscarCliente.oninput = () => { filtroTextoCliente = inputBuscarCliente.value; renderTabPedidos(); };
 
-  const selectPagado = el("select-filtro-pagado");
-  selectPagado.value = filtroPagado;
-  selectPagado.onchange = () => { filtroPagado = selectPagado.value; renderTabPedidos(); };
-
   const selectEntregado = el("select-filtro-entregado");
   selectEntregado.value = filtroEntregado;
   selectEntregado.onchange = () => { filtroEntregado = selectEntregado.value; renderTabPedidos(); };
 
-  el("btn-marcar-vistos").onclick = async () => {
-    const historial = pedidosCache.filter((p) => !esDeHoy(p.fecha));
-    const noVistos = historial.filter((p) => !p.vistoPorAdmin);
-    for (const p of noVistos) {
-      await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", p.id), { vistoPorAdmin: true });
-      p.vistoPorAdmin = true;
-    }
-    renderTodo();
-  };
-
-  let pedidosTexto = pedidosCache.filter((p) => !esDeHoy(p.fecha));
+  let lista = pedidosCache.filter((p) => !esDeHoy(p.fecha));
   if (filtroTextoCliente.trim()) {
     const texto = slugify(filtroTextoCliente);
-    pedidosTexto = pedidosTexto.filter((p) => slugify(p.clienteNombre || "").includes(texto));
+    lista = lista.filter((p) => slugify(p.clienteNombre || "").includes(texto));
   }
-
-  let lista = pedidosTexto;
-  if (filtroPagado) lista = lista.filter((p) => (filtroPagado === "si") === !!p.pagado);
   if (filtroEntregado) lista = lista.filter((p) => (filtroEntregado === "si") === !!p.entregado);
 
-  renderResumenSaldos("resumen-saldos", pedidosTexto);
   renderListaPedidosEn("lista-pedidos-admin", lista, renderTodo, "pedidos");
 }
 
@@ -246,33 +212,12 @@ function renderTodo() {
   renderTabPedidos();
 }
 
-// ---------------------------------------------------------------
-// Render genérico (compartido entre tabs Hoy y Todos)
-// ---------------------------------------------------------------
-function renderResumenSaldos(contenedorId, lista) {
-  const saldos = {};
-  lista.filter((p) => !p.pagado).forEach((p) => {
-    saldos[p.clienteNombre] = (saldos[p.clienteNombre] || 0) + p.total;
-  });
-  const entradas = Object.entries(saldos);
-  const resumen = el(contenedorId);
-  if (entradas.length === 0) {
-    resumen.className = "resumen-saldos sin-saldos";
-    resumen.innerHTML = `<strong>🎉 Sin saldos pendientes</strong>`;
-    return;
-  }
-  resumen.className = "resumen-saldos";
-  resumen.innerHTML = `<strong>💸 Pedidos no abonados</strong>` +
-    entradas.map(([nombre, monto]) => `<div class="fila-saldo"><span>${nombre}</span><span>${formatoMoneda(monto)}</span></div>`).join("");
-}
-
 function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
   const contenedor = el(contenedorId);
 
-  const nuevos = lista.filter((p) => !p.vistoPorAdmin).length;
   const tabBtn = document.querySelector(`[data-tab="${nombreTab}"]`);
   const etiquetaBase = nombreTab === "hoy" ? "Pedidos de hoy" : "Historial de pedidos";
-  tabBtn.textContent = nuevos > 0 ? `${etiquetaBase} (${nuevos})` : etiquetaBase;
+  tabBtn.textContent = lista.length > 0 ? `${etiquetaBase} (${lista.length})` : etiquetaBase;
 
   if (lista.length === 0) {
     contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">No hay pedidos.</p>`;
@@ -284,16 +229,15 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
     const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
     const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoKg(it.kg)}</li>`).join("");
     return `
-      <div class="pedido-admin ${!p.vistoPorAdmin ? "nuevo" : ""}" data-id="${p.id}">
+      <div class="pedido-admin" data-id="${p.id}">
         <div style="display:flex;justify-content:space-between;">
-          <strong>${p.clienteNombre}${!p.vistoPorAdmin ? '<span class="etiqueta-nuevo">NUEVO</span>' : ""}</strong>
+          <strong>${p.clienteNombre}</strong>
           <span style="font-size:12px;color:var(--gris);">${fechaTexto}</span>
         </div>
         <ul class="lista-items-pedido">${itemsHtml}</ul>
-        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}</div>
+        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}${MOMENTOS_TEXTO[p.momentoRetiro] ? ` · Retira por la ${MOMENTOS_TEXTO[p.momentoRetiro]}` : ""}</div>
         <div style="font-weight:700;margin-top:4px;">Total: ${formatoMoneda(p.total)}</div>
         <div class="fila-acciones">
-          <button data-accion="pagado" class="${p.pagado ? "btn-toggle-si" : "btn-toggle-no"}">${p.pagado ? "Pagado" : "No pagado"}</button>
           <button data-accion="entregado" class="${p.entregado ? "btn-toggle-si" : "btn-toggle-no"}">${p.entregado ? "Entregado" : "No entregado"}</button>
           <button data-accion="borrar" class="btn-borrar">Borrar</button>
         </div>
@@ -305,24 +249,15 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
     const id = card.dataset.id;
     const pedido = pedidosCache.find((p) => p.id === id);
 
-    card.addEventListener("click", async (ev) => {
-      if (ev.target.closest("button")) return;
-      if (!pedido.vistoPorAdmin) {
-        await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", id), { vistoPorAdmin: true });
-        pedido.vistoPorAdmin = true;
-        onCambio();
-      }
-    });
-
     card.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", async (ev) => {
         ev.stopPropagation();
         const accion = btn.dataset.accion;
-        if (accion === "pagado" || accion === "entregado") {
-          const campo = accion;
-          const nuevoValor = !pedido[campo];
-          await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", id), { [campo]: nuevoValor });
-          pedido[campo] = nuevoValor;
+        if (accion === "entregado") {
+          const nuevoValor = !pedido.entregado;
+          await updateDoc(doc(db, "verdulerias", tiendaId, "pedidos", id), { entregado: nuevoValor, pagado: nuevoValor });
+          pedido.entregado = nuevoValor;
+          pedido.pagado = nuevoValor;
           onCambio();
         } else if (accion === "borrar") {
           if (confirm(`¿Borrar el pedido de ${pedido.clienteNombre}?`)) {
@@ -334,6 +269,56 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
       });
     });
   });
+}
+
+// ---------------------------------------------------------------
+// Tab Configuración
+// ---------------------------------------------------------------
+function renderTabConfiguracion() {
+  const inputTelefonoCfg = el("cfg-telefono");
+  inputTelefonoCfg.value = tiendaInfo.telefonoContacto || "";
+  el("btn-guardar-telefono").onclick = async () => {
+    const telefonoContacto = inputTelefonoCfg.value.replace(/\D/g, "");
+    await updateDoc(doc(db, "verdulerias", tiendaId), { telefonoContacto });
+    tiendaInfo.telefonoContacto = telefonoContacto;
+    alert("Teléfono de contacto guardado.");
+  };
+
+  const inputPasswordActual = el("cfg-password-actual");
+  const inputPasswordNueva = el("cfg-password-nueva");
+  const inputPasswordNuevaConfirmar = el("cfg-password-nueva-confirmar");
+  const passwordError = el("cfg-password-error");
+
+  el("btn-cambiar-password").onclick = async () => {
+    passwordError.classList.add("oculto");
+
+    const actual = inputPasswordActual.value;
+    const nueva = inputPasswordNueva.value;
+    const confirmar = inputPasswordNuevaConfirmar.value;
+
+    if (actual !== tiendaInfo.adminPassword) {
+      passwordError.textContent = "La contraseña actual no es correcta.";
+      passwordError.classList.remove("oculto");
+      return;
+    }
+    if (!nueva) {
+      passwordError.textContent = "Ingresá la nueva contraseña.";
+      passwordError.classList.remove("oculto");
+      return;
+    }
+    if (nueva !== confirmar) {
+      passwordError.textContent = "Las contraseñas nuevas no coinciden.";
+      passwordError.classList.remove("oculto");
+      return;
+    }
+
+    await updateDoc(doc(db, "verdulerias", tiendaId), { adminPassword: nueva });
+    tiendaInfo.adminPassword = nueva;
+    inputPasswordActual.value = "";
+    inputPasswordNueva.value = "";
+    inputPasswordNuevaConfirmar.value = "";
+    alert("Contraseña actualizada con éxito.");
+  };
 }
 
 // ---------------------------------------------------------------
