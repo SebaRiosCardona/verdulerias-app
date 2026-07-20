@@ -91,15 +91,15 @@
     </header>
 
     <div class="tabs">
-      <button class="tab-btn activo" data-tab="hoy">Pedidos de hoy</button>
+      <button class="tab-btn" data-tab="hoy">Pedidos de hoy</button>
       <button class="tab-btn" data-tab="pedidos">Historial de pedidos</button>
-      <button class="tab-btn" data-tab="productos">Productos</button>
+      <button class="tab-btn activo" data-tab="productos">Productos</button>
       <button class="tab-btn" data-tab="configuracion">Configuración</button>
     </div>
 
     <main>
       <!-- Tab Hoy -->
-      <section id="tab-hoy">
+      <section id="tab-hoy" class="oculto">
         <div class="filtros-pedidos">
           <div class="filtros-estado">
             <select id="select-filtro-entregado-hoy">
@@ -134,7 +134,7 @@
       </section>
 
       <!-- Tab Productos -->
-      <section id="tab-productos" class="oculto">
+      <section id="tab-productos">
         <button class="btn-agregar-producto-nuevo" id="btn-abrir-modal-producto">+ Agregar producto</button>
         <div class="buscador-cliente" style="margin-bottom:12px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
