@@ -399,6 +399,8 @@ async function enviarPedido(resumen) {
   modalConfirmarEnviar.disabled = true;
   modalConfirmarEnviar.textContent = "Enviando...";
 
+  const ventanaWhatsApp = tiendaInfo?.telefonoContacto ? window.open("", "_blank") : null;
+
   try {
     const pedidoRef = await addDoc(collection(db, "verdulerias", tiendaId, "pedidos"), {
       clienteId: cliente.clienteId,
@@ -422,13 +424,16 @@ async function enviarPedido(resumen) {
     carrito = {};
 
     const linkWhatsApp = armarLinkWhatsApp(resumen, momentoSeleccionado);
-    if (linkWhatsApp) {
+    if (linkWhatsApp && ventanaWhatsApp) {
+      ventanaWhatsApp.location.href = linkWhatsApp;
+    } else if (linkWhatsApp) {
       window.open(linkWhatsApp, "_blank");
     }
 
     cerrarModalConfirmarPedido();
     mostrarConfirmacion();
   } catch (e) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
     alert("No pudimos confirmar el pedido: " + e.message);
     modalConfirmarEnviar.disabled = false;
     modalConfirmarEnviar.textContent = "Enviar pedido";
