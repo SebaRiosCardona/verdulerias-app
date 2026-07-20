@@ -291,6 +291,7 @@ main {
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
+  touch-action: manipulation;
 }
 .qty-valor {
   min-width: 44px;
