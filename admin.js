@@ -226,7 +226,7 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
 
   contenedor.innerHTML = lista.map((p) => {
     const fecha = new Date(p.fecha);
-    const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
     const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoKg(it.kg)}</li>`).join("");
     return `
       <div class="pedido-admin" data-id="${p.id}">

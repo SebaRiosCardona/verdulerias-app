@@ -493,7 +493,7 @@ function armarLinkWhatsApp(p, momentoRetiro) {
 function renderPedido(p) {
   const fecha = new Date(p.fecha);
   const fechaTexto = fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
-    " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
 
   const itemsHtml = (p.items || []).map((it) => `
     <div class="pedido-item-fila">
