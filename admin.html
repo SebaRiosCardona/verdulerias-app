@@ -27,7 +27,7 @@
   .btn-toggle-no { background:#fdeaea; color:var(--rojo); }
   .btn-borrar { background:#f1f1f1; color:var(--gris); margin-left:auto; text-transform:none; letter-spacing:normal; border-radius:8px; }
   .producto-admin { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
-  .producto-admin input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .producto-admin input[type="text"][data-campo="precio"] { width:90px; padding:8px; border-radius:8px; border:1px solid var(--gris-claro); }
   .switch { position:relative; width:44px; height:24px; flex-shrink:0; }
   .switch input { opacity:0; width:0; height:0; }
   .slider { position:absolute; inset:0; background:#f1f1f1; border-radius:24px; transition:.2s; cursor:pointer; }
@@ -47,6 +47,9 @@
   .modal-producto h3 { margin:0 0 14px; color:var(--verde-oscuro); }
   .modal-producto label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:10px 0 4px; }
   .modal-producto input, .modal-producto select { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
+  .campo-precio { position:relative; }
+  .campo-precio::before { content:"$"; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gris); font-weight:600; pointer-events:none; }
+  .campo-precio input { padding-left:22px !important; }
   .modal-producto-acciones { display:flex; gap:10px; margin-top:16px; }
   .modal-producto-acciones button { flex:1; padding:11px; border-radius:8px; border:none; font-weight:700; font-size:13.5px; }
   .btn-modal-cancelar { background:#f1f1f1; color:var(--gris); }
@@ -192,7 +195,9 @@
         <option value="unidad">Unidad</option>
       </select>
       <label id="np-precio-label">Precio por kg</label>
-      <input id="np-precio" type="number" min="0" step="10" placeholder="Ej: 1200" />
+      <div class="campo-precio">
+        <input id="np-precio" type="text" inputmode="numeric" placeholder="Ej: 1200" />
+      </div>
       <div class="modal-producto-acciones">
         <button type="button" id="modal-producto-cancelar" class="btn-modal-cancelar">Cancelar</button>
         <button type="button" id="btn-agregar-producto" style="background:var(--verde);color:#fff;">Agregar producto</button>

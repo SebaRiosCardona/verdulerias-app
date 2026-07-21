@@ -34,6 +34,31 @@ function slugify(texto) {
 function formatoMoneda(valor) {
   return "$" + Math.round(valor).toLocaleString("es-AR");
 }
+function formatoMiles(valor) {
+  return Math.round(valor).toLocaleString("es-AR");
+}
+function parsearMiles(texto) {
+  return parseFloat(texto.replace(/\./g, "").replace(",", "."));
+}
+function activarFormatoMiles(input, alConfirmar) {
+  input.addEventListener("input", () => {
+    const cursorDesdeElFinal = input.value.length - input.selectionStart;
+    const valor = parsearMiles(input.value);
+    input.value = valor > 0 ? formatoMiles(valor) : input.value.replace(/[^\d]/g, "");
+    const nuevaPosicion = Math.max(0, input.value.length - cursorDesdeElFinal);
+    input.setSelectionRange(nuevaPosicion, nuevaPosicion);
+  });
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    if (alConfirmar) {
+      alConfirmar();
+    } else {
+      input.blur();
+      input.dispatchEvent(new Event("change"));
+    }
+  });
+}
 function formatoKg(valor) {
   return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
 }
@@ -344,6 +369,8 @@ function renderTabProductos() {
   inputBuscarProducto.value = filtroTextoProducto;
   inputBuscarProducto.oninput = () => { filtroTextoProducto = inputBuscarProducto.value; renderListaProductosAdmin(); };
 
+  activarFormatoMiles(el("np-precio"), () => el("btn-agregar-producto").click());
+
   el("np-unidad").onchange = () => {
     el("np-precio-label").textContent = UNIDADES_VENTA[el("np-unidad").value].precioLabel;
   };
@@ -368,7 +395,7 @@ function renderTabProductos() {
     const nombre = el("np-nombre").value.trim();
     const categoria = el("np-categoria").value;
     const unidadVenta = el("np-unidad").value;
-    const precio = parseFloat(el("np-precio").value);
+    const precio = parsearMiles(el("np-precio").value);
     if (!nombre || !precio || precio <= 0) {
       alert("Completá nombre y precio válido.");
       return;
@@ -405,7 +432,7 @@ function abrirModalEditarProducto(producto) {
   el("np-categoria").value = producto.categoria;
   el("np-unidad").value = unidad;
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
-  el("np-precio").value = producto.precioPorKg;
+  el("np-precio").value = formatoMiles(producto.precioPorKg);
   el("modal-producto").classList.remove("oculto");
 }
 
@@ -431,7 +458,9 @@ function renderListaProductosAdmin() {
         <div style="font-size:12px;color:var(--gris);">${unidad.precioLabel} · ${unidad.etiqueta}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <input type="number" min="0" step="10" value="${p.precioPorKg}" data-campo="precio" />
+        <div class="campo-precio">
+          <input type="text" inputmode="numeric" value="${formatoMiles(p.precioPorKg)}" data-campo="precio" />
+        </div>
         <label class="switch">
           <input type="checkbox" data-campo="activo" ${p.activo !== false ? "checked" : ""} />
           <span class="slider"></span>
@@ -451,8 +480,10 @@ function renderListaProductosAdmin() {
     const id = row.dataset.id;
     const producto = productosCache.find((p) => p.id === id);
 
-    row.querySelector('[data-campo="precio"]').addEventListener("change", async (ev) => {
-      const nuevoPrecio = parseFloat(ev.target.value);
+    const inputPrecio = row.querySelector('[data-campo="precio"]');
+    activarFormatoMiles(inputPrecio);
+    inputPrecio.addEventListener("change", async (ev) => {
+      const nuevoPrecio = parsearMiles(ev.target.value);
       if (!nuevoPrecio || nuevoPrecio <= 0) return;
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { precioPorKg: nuevoPrecio });
       producto.precioPorKg = nuevoPrecio;
