@@ -12,9 +12,10 @@
   .tab-btn.activo { background:var(--verde); color:#fff; }
   main { padding:14px 16px 60px; }
   .filtros-pedidos { margin-bottom:12px; display:flex; flex-direction:column; gap:8px; }
-  .buscador-cliente { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--gris-claro); border-radius:10px; padding:10px 12px; }
+  .buscador-cliente { display:flex; align-items:center; gap:8px; background:transparent; border-radius:10px; padding:10px 12px; }
   .buscador-cliente svg { flex-shrink:0; color:var(--gris); }
-  .buscador-cliente input { border:none; outline:none; flex:1; background:transparent; font-size:14px; }
+  .buscador-cliente input { border:none; border-bottom:1px solid transparent; outline:none; flex:1; background:transparent; font-size:14px; padding-bottom:2px; transition:border-color .15s ease; }
+  .buscador-cliente input:focus { border-bottom-color: var(--verde); }
   .filtros-estado { display:flex; gap:8px; }
   .filtros-estado select { flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--gris-claro); background:#fff; font-size:13px; color:var(--texto); }
   .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
@@ -33,7 +34,8 @@
   .slider:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.3); }
   input:checked + .slider { background:var(--verde); }
   input:checked + .slider:before { transform:translateX(20px); }
-  .btn-eliminar-producto { border:none; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; flex-shrink:0; }
+  .btn-editar-producto, .btn-eliminar-producto { border:none; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:#f6f6f4; color:var(--gris); cursor:pointer; flex-shrink:0; }
+  .btn-editar-producto:hover { background:var(--verde-claro); color:var(--verde-oscuro); }
   .btn-eliminar-producto:hover { background:#fdeaea; color:var(--rojo); }
   .btn-agregar-producto-nuevo { width:100%; padding:12px; background:var(--verde); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:14px; margin-bottom:12px; }
   .form-nuevo-producto { background:#fff; border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
@@ -174,7 +176,7 @@
   <!-- Modal agregar producto -->
   <div id="modal-producto" class="modal-overlay oculto">
     <div class="modal-producto">
-      <h3>Nuevo producto</h3>
+      <h3 id="modal-producto-titulo">Nuevo producto</h3>
       <label>Nombre</label>
       <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
       <label>Categoría</label>
@@ -182,7 +184,14 @@
         <option value="verdura">Verdura</option>
         <option value="fruta">Fruta</option>
       </select>
-      <label>Precio por kg</label>
+      <label>Se vende por</label>
+      <select id="np-unidad">
+        <option value="kg">Kilo</option>
+        <option value="medio_kg">Medio kilo</option>
+        <option value="100g">100 gramos</option>
+        <option value="unidad">Unidad</option>
+      </select>
+      <label id="np-precio-label">Precio por kg</label>
       <input id="np-precio" type="number" min="0" step="10" placeholder="Ej: 1200" />
       <div class="modal-producto-acciones">
         <button type="button" id="modal-producto-cancelar" class="btn-modal-cancelar">Cancelar</button>

@@ -37,6 +37,10 @@ function formatoMoneda(valor) {
 function formatoKg(valor) {
   return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
 }
+function formatoCantidad(item) {
+  if ((item.unidadVenta || "kg") === "unidad") return `${Math.round(item.kg)} u.`;
+  return formatoKg(item.kg);
+}
 
 const pantallaCarga = el("pantalla-carga");
 const vistaLoginAdmin = el("vista-login-admin");
@@ -227,7 +231,7 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
   contenedor.innerHTML = lista.map((p) => {
     const fecha = new Date(p.fecha);
     const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
-    const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoKg(it.kg)}</li>`).join("");
+    const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoCantidad(it)}</li>`).join("");
     return `
       <div class="pedido-admin" data-id="${p.id}">
         <div style="display:flex;justify-content:space-between;">
@@ -325,6 +329,14 @@ function renderTabConfiguracion() {
 // Tab Productos
 // ---------------------------------------------------------------
 let filtroTextoProducto = "";
+let productoEnEdicion = null;
+
+const UNIDADES_VENTA = {
+  kg: { etiqueta: "Kilo", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
+  medio_kg: { etiqueta: "Medio kilo", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
+  "100g": { etiqueta: "100 gramos", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
+  unidad: { etiqueta: "Unidad", precioLabel: "Precio por unidad", sufijoPrecio: "/ unidad" },
+};
 
 function renderTabProductos() {
   const modalProducto = el("modal-producto");
@@ -332,9 +344,18 @@ function renderTabProductos() {
   inputBuscarProducto.value = filtroTextoProducto;
   inputBuscarProducto.oninput = () => { filtroTextoProducto = inputBuscarProducto.value; renderListaProductosAdmin(); };
 
+  el("np-unidad").onchange = () => {
+    el("np-precio-label").textContent = UNIDADES_VENTA[el("np-unidad").value].precioLabel;
+  };
+
   el("btn-abrir-modal-producto").onclick = () => {
+    productoEnEdicion = null;
+    el("modal-producto-titulo").textContent = "Nuevo producto";
+    el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
     el("np-categoria").value = "verdura";
+    el("np-unidad").value = "kg";
+    el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
     el("np-precio").value = "";
     modalProducto.classList.remove("oculto");
   };
@@ -346,21 +367,46 @@ function renderTabProductos() {
   el("btn-agregar-producto").onclick = async () => {
     const nombre = el("np-nombre").value.trim();
     const categoria = el("np-categoria").value;
+    const unidadVenta = el("np-unidad").value;
     const precio = parseFloat(el("np-precio").value);
     if (!nombre || !precio || precio <= 0) {
       alert("Completá nombre y precio válido.");
       return;
     }
-    const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
-      nombre, categoria, precioPorKg: precio, activo: true
-    });
-    productosCache.push({ id: ref.id, nombre, categoria, precioPorKg: precio, activo: true });
+
+    if (productoEnEdicion) {
+      await updateDoc(doc(db, "verdulerias", tiendaId, "productos", productoEnEdicion.id), {
+        nombre, categoria, unidadVenta, precioPorKg: precio
+      });
+      productoEnEdicion.nombre = nombre;
+      productoEnEdicion.categoria = categoria;
+      productoEnEdicion.unidadVenta = unidadVenta;
+      productoEnEdicion.precioPorKg = precio;
+    } else {
+      const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
+        nombre, categoria, unidadVenta, precioPorKg: precio, activo: true
+      });
+      productosCache.push({ id: ref.id, nombre, categoria, unidadVenta, precioPorKg: precio, activo: true });
+    }
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     modalProducto.classList.add("oculto");
     renderListaProductosAdmin();
   };
 
   renderListaProductosAdmin();
+}
+
+function abrirModalEditarProducto(producto) {
+  productoEnEdicion = producto;
+  const unidad = producto.unidadVenta || "kg";
+  el("modal-producto-titulo").textContent = "Editar producto";
+  el("btn-agregar-producto").textContent = "Guardar cambios";
+  el("np-nombre").value = producto.nombre;
+  el("np-categoria").value = producto.categoria;
+  el("np-unidad").value = unidad;
+  el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
+  el("np-precio").value = producto.precioPorKg;
+  el("modal-producto").classList.remove("oculto");
 }
 
 function renderListaProductosAdmin() {
@@ -376,11 +422,13 @@ function renderListaProductosAdmin() {
     contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">${productosCache.length === 0 ? "Todavía no cargaste productos." : "No encontramos productos con ese nombre."}</p>`;
     return;
   }
-  contenedor.innerHTML = lista.map((p) => `
+  contenedor.innerHTML = lista.map((p) => {
+    const unidad = UNIDADES_VENTA[p.unidadVenta || "kg"];
+    return `
     <div class="producto-admin" data-id="${p.id}">
       <div>
         <div style="font-weight:600;">${p.nombre} <span style="font-size:11px;color:var(--gris);">(${p.categoria})</span></div>
-        <div style="font-size:12px;color:var(--gris);">Precio por kg</div>
+        <div style="font-size:12px;color:var(--gris);">${unidad.precioLabel} · ${unidad.etiqueta}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <input type="number" min="0" step="10" value="${p.precioPorKg}" data-campo="precio" />
@@ -388,12 +436,16 @@ function renderListaProductosAdmin() {
           <input type="checkbox" data-campo="activo" ${p.activo !== false ? "checked" : ""} />
           <span class="slider"></span>
         </label>
+        <button class="btn-editar-producto" data-accion="editar" title="Editar producto" aria-label="Editar producto">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        </button>
         <button class="btn-eliminar-producto" data-accion="eliminar" title="Eliminar producto" aria-label="Eliminar producto">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
         </button>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   contenedor.querySelectorAll(".producto-admin").forEach((row) => {
     const id = row.dataset.id;
@@ -410,6 +462,10 @@ function renderListaProductosAdmin() {
       const activo = ev.target.checked;
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { activo });
       producto.activo = activo;
+    });
+
+    row.querySelector('[data-accion="editar"]').addEventListener("click", () => {
+      abrirModalEditarProducto(producto);
     });
 
     row.querySelector('[data-accion="eliminar"]').addEventListener("click", async () => {

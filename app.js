@@ -44,6 +44,36 @@ function formatoKg(valor) {
   return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
 }
 
+// ---------------------------------------------------------------
+// Unidades de venta
+// ---------------------------------------------------------------
+const UNIDADES_VENTA = {
+  kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
+  medio_kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
+  "100g": { paso: 0.1, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
+  unidad: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
+};
+
+function unidadDe(producto) {
+  return UNIDADES_VENTA[producto?.unidadVenta || "kg"];
+}
+
+function pasoDe(producto) {
+  return unidadDe(producto).paso;
+}
+
+function formatoCantidad(producto, cantidad) {
+  return unidadDe(producto).formato(cantidad);
+}
+
+function subtotalDe(producto, cantidad) {
+  return (producto?.precioPorKg || 0) * cantidad;
+}
+
+function kgEquivalente(producto, cantidad) {
+  return cantidad * unidadDe(producto).kgPorUnidad;
+}
+
 const params = new URLSearchParams(window.location.search);
 const tiendaId = params.get("tienda") || TIENDA_POR_DEFECTO;
 
@@ -292,7 +322,8 @@ function renderProductos() {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       const accion = btn.dataset.accion;
-      const paso = 0.5;
+      const producto = productos.find((x) => x.id === id);
+      const paso = pasoDe(producto);
       const actual = carrito[id] || 0;
       let nuevo = accion === "sumar" ? actual + paso : actual - paso;
       if (nuevo < 0) nuevo = 0;
@@ -306,16 +337,16 @@ function renderProductos() {
 }
 
 function renderFilaProducto(p) {
-  const kg = carrito[p.id] || 0;
+  const cantidad = carrito[p.id] || 0;
   return `
     <div class="producto">
       <div class="producto-info">
         <div class="producto-nombre">${p.emoji ? p.emoji + " " : ""}${p.nombre}</div>
-        <div class="producto-precio">${formatoMoneda(p.precioPorKg)} / kg</div>
+        <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
       </div>
       <div class="producto-cantidad">
-        <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${kg <= 0 ? "disabled" : ""}>−</button>
-        <div class="qty-valor">${kg > 0 ? formatoKg(kg) : "—"}</div>
+        <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>
+        <div class="qty-valor">${cantidad > 0 ? formatoCantidad(p, cantidad) : "—"}</div>
         <button class="btn-qty" data-id="${p.id}" data-accion="sumar">+</button>
       </div>
     </div>
@@ -323,12 +354,21 @@ function renderFilaProducto(p) {
 }
 
 function calcularCarrito() {
-  const items = Object.entries(carrito).map(([productoId, kg]) => {
+  const items = Object.entries(carrito).map(([productoId, cantidad]) => {
     const p = productos.find((x) => x.id === productoId);
-    const subtotal = p ? p.precioPorKg * kg : 0;
-    return { productoId, nombre: p?.nombre || "?", categoria: p?.categoria || "verdura", precioPorKg: p?.precioPorKg || 0, kg, subtotal };
+    const subtotal = subtotalDe(p, cantidad);
+    return {
+      productoId,
+      nombre: p?.nombre || "?",
+      categoria: p?.categoria || "verdura",
+      precioPorKg: p?.precioPorKg || 0,
+      unidadVenta: p?.unidadVenta || "kg",
+      kg: cantidad,
+      kgEquivalente: kgEquivalente(p, cantidad),
+      subtotal
+    };
   });
-  const pesoTotalKg = items.reduce((acc, it) => acc + it.kg, 0);
+  const pesoTotalKg = items.reduce((acc, it) => acc + it.kgEquivalente, 0);
   const subtotal = items.reduce((acc, it) => acc + it.subtotal, 0);
   const cumpleMinimo = pesoTotalKg >= KG_MINIMO_DESCUENTO;
   const descuentoMonto = cumpleMinimo ? subtotal * PORCENTAJE_DESCUENTO : 0;
@@ -337,7 +377,7 @@ function calcularCarrito() {
 }
 
 function actualizarBarraCarrito() {
-  const { pesoTotalKg, total, cumpleMinimo } = calcularCarrito();
+  const { items, pesoTotalKg, total, cumpleMinimo } = calcularCarrito();
 
   if (cumpleMinimo) {
     barraDescuento.className = "barra-descuento lograda";
@@ -350,19 +390,19 @@ function actualizarBarraCarrito() {
 
   barraKg.textContent = formatoKg(pesoTotalKg);
   barraTotal.textContent = formatoMoneda(total);
-  btnConfirmar.disabled = pesoTotalKg <= 0;
+  btnConfirmar.disabled = items.length === 0;
 }
 
 btnConfirmar.addEventListener("click", () => {
   const resumen = calcularCarrito();
-  if (resumen.pesoTotalKg <= 0) return;
+  if (resumen.items.length === 0) return;
   abrirModalConfirmarPedido(resumen);
 });
 
 function abrirModalConfirmarPedido(resumen) {
   modalConfirmarItems.innerHTML = resumen.items.map((it) => `
     <div class="pedido-item-fila">
-      <span>${it.nombre} — ${formatoKg(it.kg)}</span>
+      <span>${it.nombre} — ${formatoCantidad(it, it.kg)}</span>
       <span>${formatoMoneda(it.subtotal)}</span>
     </div>
   `).join("");
@@ -480,7 +520,7 @@ async function mostrarMisCompras() {
 function armarLinkWhatsApp(p, momentoRetiro) {
   const telefono = tiendaInfo?.telefonoContacto;
   if (!telefono) return null;
-  const itemsTextoWhatsApp = (p.items || []).map((it) => `• ${it.nombre} — ${formatoKg(it.kg)}`).join("\n");
+  const itemsTextoWhatsApp = (p.items || []).map((it) => `• ${it.nombre} — ${formatoCantidad(it, it.kg)}`).join("\n");
   const lineasWhatsApp = [
     "Hola! Te paso mi pedido para que lo confirmes:",
     "",
@@ -502,7 +542,7 @@ function renderPedido(p) {
 
   const itemsHtml = (p.items || []).map((it) => `
     <div class="pedido-item-fila">
-      <span>${it.nombre} — ${formatoKg(it.kg)}</span>
+      <span>${it.nombre} — ${formatoCantidad(it, it.kg)}</span>
       <span>${formatoMoneda(it.subtotal)}</span>
     </div>
   `).join("");
