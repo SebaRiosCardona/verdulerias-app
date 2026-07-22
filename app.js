@@ -308,11 +308,11 @@ function renderProductos() {
 
   let html = "";
   if (grupos.fruta.length) {
-    html += `<div class="categoria-titulo">🍎 Frutas</div>`;
+    html += `<div class="categoria-titulo">Frutas</div>`;
     html += grupos.fruta.map(renderFilaProducto).join("");
   }
   if (grupos.verdura.length) {
-    html += `<div class="categoria-titulo">🥕 Verduras</div>`;
+    html += `<div class="categoria-titulo">Verduras</div>`;
     html += grupos.verdura.map(renderFilaProducto).join("");
   }
   listaProductos.innerHTML = html;
