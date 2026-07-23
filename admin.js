@@ -378,6 +378,9 @@ function formatoCantidadItem(producto, cantidad) {
 let filasContenidoBolson = [];
 
 function productosDisponiblesParaBolson() {
+  const categoriaBolson = el("np-categoria").value;
+  if (categoriaBolson === "bolson_frutas") return productosCache.filter((p) => p.categoria === "fruta");
+  if (categoriaBolson === "bolson_verduras") return productosCache.filter((p) => p.categoria === "verdura");
   return productosCache.filter((p) => !esCategoriaBolson(p.categoria));
 }
 
@@ -399,7 +402,11 @@ function renderFilasContenidoBolson() {
         <option value="">Elegir producto...</option>
         ${disponibles.map((p) => `<option value="${p.id}" ${fila.productoId === p.id ? "selected" : ""}>${p.nombre}</option>`).join("")}
       </select>
-      <input class="campo-cantidad-bolson" type="number" inputmode="decimal" min="0" step="${unidadFila.paso}" placeholder="Cant." value="${fila.cantidad || ""}" data-campo="cantidad" />
+      <div class="cantidad-item-bolson">
+        <button type="button" class="btn-qty-bolson" data-accion="restar-item" ${fila.cantidad > 0 ? "" : "disabled"}>−</button>
+        <span class="valor-qty-bolson">${fila.cantidad || 0}</span>
+        <button type="button" class="btn-qty-bolson" data-accion="sumar-item" ${fila.productoId ? "" : "disabled"}>+</button>
+      </div>
       <span class="unidad-item-bolson">${fila.productoId ? unidadFila.etiquetaCorta : ""}</span>
       <button type="button" class="btn-quitar-item-bolson" data-accion="quitar-item" title="Quitar item">×</button>
     </div>
@@ -415,8 +422,19 @@ function renderFilasContenidoBolson() {
       renderFilasContenidoBolson();
     });
 
-    filaEl.querySelector('[data-campo="cantidad"]').addEventListener("input", (ev) => {
-      filasContenidoBolson[index].cantidad = parseFloat(ev.target.value) || 0;
+    const productoFila = disponibles.find((p) => p.id === filasContenidoBolson[index].productoId);
+    const paso = UNIDADES_VENTA[productoFila?.unidadVenta || "kg"].paso;
+
+    filaEl.querySelector('[data-accion="sumar-item"]').addEventListener("click", () => {
+      const actual = filasContenidoBolson[index].cantidad || 0;
+      filasContenidoBolson[index].cantidad = Math.round((actual + paso) * 100) / 100;
+      renderFilasContenidoBolson();
+    });
+
+    filaEl.querySelector('[data-accion="restar-item"]').addEventListener("click", () => {
+      const actual = filasContenidoBolson[index].cantidad || 0;
+      filasContenidoBolson[index].cantidad = Math.max(0, Math.round((actual - paso) * 100) / 100);
+      renderFilasContenidoBolson();
     });
 
     filaEl.querySelector('[data-accion="quitar-item"]').addEventListener("click", () => {
