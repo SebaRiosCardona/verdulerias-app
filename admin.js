@@ -245,8 +245,7 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
   const contenedor = el(contenedorId);
 
   const tabBtn = document.querySelector(`[data-tab="${nombreTab}"]`);
-  const etiquetaBase = nombreTab === "hoy" ? "Pedidos de hoy" : "Historial de pedidos";
-  tabBtn.textContent = lista.length > 0 ? `${etiquetaBase} (${lista.length})` : etiquetaBase;
+  tabBtn.querySelector(".tab-contador").textContent = lista.length > 0 ? ` (${lista.length})` : "";
 
   if (lista.length === 0) {
     contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">No hay pedidos.</p>`;
@@ -380,7 +379,6 @@ function renderTabProductos() {
     el("modal-producto-titulo").textContent = "Nuevo producto";
     el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
-    el("np-emoji").value = "";
     el("np-categoria").value = "verdura";
     el("np-unidad").value = "kg";
     el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
@@ -394,7 +392,6 @@ function renderTabProductos() {
 
   el("btn-agregar-producto").onclick = async () => {
     const nombre = el("np-nombre").value.trim();
-    const emoji = el("np-emoji").value.trim();
     const categoria = el("np-categoria").value;
     const unidadVenta = el("np-unidad").value;
     const precio = parsearMiles(el("np-precio").value);
@@ -405,18 +402,17 @@ function renderTabProductos() {
 
     if (productoEnEdicion) {
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", productoEnEdicion.id), {
-        nombre, emoji, categoria, unidadVenta, precioPorKg: precio
+        nombre, categoria, unidadVenta, precioPorKg: precio
       });
       productoEnEdicion.nombre = nombre;
-      productoEnEdicion.emoji = emoji;
       productoEnEdicion.categoria = categoria;
       productoEnEdicion.unidadVenta = unidadVenta;
       productoEnEdicion.precioPorKg = precio;
     } else {
       const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
-        nombre, emoji, categoria, unidadVenta, precioPorKg: precio, activo: true
+        nombre, categoria, unidadVenta, precioPorKg: precio, activo: true
       });
-      productosCache.push({ id: ref.id, nombre, emoji, categoria, unidadVenta, precioPorKg: precio, activo: true });
+      productosCache.push({ id: ref.id, nombre, categoria, unidadVenta, precioPorKg: precio, activo: true });
     }
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     modalProducto.classList.add("oculto");
@@ -432,7 +428,6 @@ function abrirModalEditarProducto(producto) {
   el("modal-producto-titulo").textContent = "Editar producto";
   el("btn-agregar-producto").textContent = "Guardar cambios";
   el("np-nombre").value = producto.nombre;
-  el("np-emoji").value = producto.emoji || "";
   el("np-categoria").value = producto.categoria;
   el("np-unidad").value = unidad;
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
@@ -458,7 +453,7 @@ function renderListaProductosAdmin() {
     return `
     <div class="producto-admin" data-id="${p.id}">
       <div>
-        <div style="font-weight:600;">${p.emoji ? p.emoji + " " : ""}${p.nombre} <span style="font-size:11px;color:var(--gris);">(${p.categoria})</span></div>
+        <div style="font-weight:600;">${p.nombre}</div>
         <div style="font-size:12px;color:var(--gris);">${unidad.precioLabel} · ${unidad.etiqueta}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">

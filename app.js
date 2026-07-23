@@ -341,7 +341,7 @@ function renderFilaProducto(p) {
   return `
     <div class="producto">
       <div class="producto-info">
-        <div class="producto-nombre">${p.emoji ? p.emoji + " " : ""}${p.nombre}</div>
+        <div class="producto-nombre">${p.nombre}</div>
         <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
       </div>
       <div class="producto-cantidad">
