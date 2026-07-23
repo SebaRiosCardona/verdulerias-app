@@ -291,6 +291,10 @@ btnVolverCatalogo.addEventListener("click", () => mostrarCatalogo());
 
 inputBuscar.addEventListener("input", () => renderProductos());
 
+function esCategoriaBolson(categoria) {
+  return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
+}
+
 function renderProductos() {
   const texto = slugify(inputBuscar.value || "");
   const filtrados = productos.filter((p) => slugify(p.nombre).includes(texto));
@@ -300,13 +304,17 @@ function renderProductos() {
     return;
   }
 
-  const grupos = { fruta: [], verdura: [] };
+  const grupos = { bolson: [], fruta: [], verdura: [] };
   filtrados.forEach((p) => {
-    const cat = p.categoria === "fruta" ? "fruta" : "verdura";
+    const cat = esCategoriaBolson(p.categoria) ? "bolson" : (p.categoria === "fruta" ? "fruta" : "verdura");
     grupos[cat].push(p);
   });
 
   let html = "";
+  if (grupos.bolson.length) {
+    html += `<div class="categoria-titulo">Bolsones</div>`;
+    html += grupos.bolson.map(renderFilaProducto).join("");
+  }
   if (grupos.fruta.length) {
     html += `<div class="categoria-titulo">Frutas</div>`;
     html += grupos.fruta.map(renderFilaProducto).join("");
@@ -338,17 +346,26 @@ function renderProductos() {
 
 function renderFilaProducto(p) {
   const cantidad = carrito[p.id] || 0;
+  const tieneContenido = esCategoriaBolson(p.categoria) && p.contenido;
   return `
     <div class="producto">
-      <div class="producto-info">
-        <div class="producto-nombre">${p.nombre}</div>
-        <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
+      <div class="producto-fila">
+        <div class="producto-info">
+          <div class="producto-nombre">${p.nombre}</div>
+          <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
+        </div>
+        <div class="producto-cantidad">
+          <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>
+          <div class="qty-valor">${cantidad > 0 ? formatoCantidad(p, cantidad) : "—"}</div>
+          <button class="btn-qty" data-id="${p.id}" data-accion="sumar">+</button>
+        </div>
       </div>
-      <div class="producto-cantidad">
-        <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>
-        <div class="qty-valor">${cantidad > 0 ? formatoCantidad(p, cantidad) : "—"}</div>
-        <button class="btn-qty" data-id="${p.id}" data-accion="sumar">+</button>
-      </div>
+      ${tieneContenido ? `
+        <details class="producto-detalle">
+          <summary>¿Qué lleva?</summary>
+          <ul>${p.contenido.split(",").map((item) => `<li>${item.trim()}</li>`).join("")}</ul>
+        </details>
+      ` : ""}
     </div>
   `;
 }

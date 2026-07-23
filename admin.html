@@ -124,13 +124,21 @@
   <div id="modal-producto" class="modal-overlay oculto">
     <div class="modal-producto">
       <h3 id="modal-producto-titulo">Nuevo producto</h3>
-      <label>Nombre</label>
-      <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
       <label>Categoría</label>
       <select id="np-categoria">
         <option value="verdura">Verdura</option>
         <option value="fruta">Fruta</option>
+        <option value="bolson_verduras">Bolsón Verduras</option>
+        <option value="bolson_frutas">Bolsón Frutas</option>
+        <option value="bolson_mixto">Bolsón Mixto</option>
       </select>
+      <label>Nombre</label>
+      <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
+      <div id="np-contenido-wrap" class="oculto">
+        <label>¿Qué lleva el bolsón?</label>
+        <div id="np-contenido-filas"></div>
+        <button type="button" id="btn-agregar-item-bolson" class="btn-agregar-item-bolson">+ Agregar item</button>
+      </div>
       <label>Se vende por</label>
       <select id="np-unidad">
         <option value="kg">Kilo</option>

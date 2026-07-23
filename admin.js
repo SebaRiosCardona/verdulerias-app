@@ -245,7 +245,7 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
   const contenedor = el(contenedorId);
 
   const tabBtn = document.querySelector(`[data-tab="${nombreTab}"]`);
-  tabBtn.querySelector(".tab-contador").textContent = lista.length > 0 ? ` (${lista.length})` : "";
+  tabBtn.querySelector(".tab-contador").textContent = lista.length > 0 ? `(${lista.length})` : "";
 
   if (lista.length === 0) {
     contenedor.innerHTML = `<p style="color:var(--gris);text-align:center;">No hay pedidos.</p>`;
@@ -356,11 +356,88 @@ let filtroTextoProducto = "";
 let productoEnEdicion = null;
 
 const UNIDADES_VENTA = {
-  kg: { etiqueta: "Kilo", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
-  medio_kg: { etiqueta: "Medio kilo", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
-  "100g": { etiqueta: "100 gramos", precioLabel: "Precio por kg", sufijoPrecio: "/ kg" },
-  unidad: { etiqueta: "Unidad", precioLabel: "Precio por unidad", sufijoPrecio: "/ unidad" },
+  kg: { etiqueta: "Kilo", etiquetaCorta: "kg", precioLabel: "Precio por kg", sufijoPrecio: "/ kg", paso: 0.5 },
+  medio_kg: { etiqueta: "Medio kilo", etiquetaCorta: "kg", precioLabel: "Precio por kg", sufijoPrecio: "/ kg", paso: 0.5 },
+  "100g": { etiqueta: "100 gramos", etiquetaCorta: "100g", precioLabel: "Precio por kg", sufijoPrecio: "/ kg", paso: 0.1 },
+  unidad: { etiqueta: "Unidad", etiquetaCorta: "u", precioLabel: "Precio por unidad", sufijoPrecio: "/ unidad", paso: 1 },
 };
+
+function esCategoriaBolson(categoria) {
+  return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
+}
+
+function formatoCantidadItem(producto, cantidad) {
+  if ((producto?.unidadVenta || "kg") === "unidad") {
+    const n = Math.round(cantidad);
+    return `${n} ${n === 1 ? "unidad" : "unidades"}`;
+  }
+  const kg = Math.round(cantidad * 10) / 10;
+  return `${kg % 1 === 0 ? kg.toFixed(0) : kg.toFixed(1)} kg`;
+}
+
+let filasContenidoBolson = [];
+
+function productosDisponiblesParaBolson() {
+  return productosCache.filter((p) => !esCategoriaBolson(p.categoria));
+}
+
+function renderFilasContenidoBolson() {
+  const contenedor = el("np-contenido-filas");
+  const disponibles = productosDisponiblesParaBolson();
+
+  if (filasContenidoBolson.length === 0) {
+    contenedor.innerHTML = `<p style="color:var(--gris);font-size:12.5px;margin:0 0 8px;">Todavía no agregaste ningún item.</p>`;
+    return;
+  }
+
+  contenedor.innerHTML = filasContenidoBolson.map((fila, index) => {
+    const productoFila = disponibles.find((p) => p.id === fila.productoId);
+    const unidadFila = UNIDADES_VENTA[productoFila?.unidadVenta || "kg"];
+    return `
+    <div class="fila-item-bolson" data-index="${index}">
+      <select data-campo="producto">
+        <option value="">Elegir producto...</option>
+        ${disponibles.map((p) => `<option value="${p.id}" ${fila.productoId === p.id ? "selected" : ""}>${p.nombre}</option>`).join("")}
+      </select>
+      <input class="campo-cantidad-bolson" type="number" inputmode="decimal" min="0" step="${unidadFila.paso}" placeholder="Cant." value="${fila.cantidad || ""}" data-campo="cantidad" />
+      <span class="unidad-item-bolson">${fila.productoId ? unidadFila.etiquetaCorta : ""}</span>
+      <button type="button" class="btn-quitar-item-bolson" data-accion="quitar-item" title="Quitar item">×</button>
+    </div>
+  `;
+  }).join("");
+
+  contenedor.querySelectorAll(".fila-item-bolson").forEach((filaEl) => {
+    const index = parseInt(filaEl.dataset.index);
+
+    filaEl.querySelector('[data-campo="producto"]').addEventListener("change", (ev) => {
+      filasContenidoBolson[index].productoId = ev.target.value;
+      filasContenidoBolson[index].cantidad = 0;
+      renderFilasContenidoBolson();
+    });
+
+    filaEl.querySelector('[data-campo="cantidad"]').addEventListener("input", (ev) => {
+      filasContenidoBolson[index].cantidad = parseFloat(ev.target.value) || 0;
+    });
+
+    filaEl.querySelector('[data-accion="quitar-item"]').addEventListener("click", () => {
+      filasContenidoBolson.splice(index, 1);
+      renderFilasContenidoBolson();
+    });
+  });
+}
+
+function contenidoBolsonATexto() {
+  const disponibles = productosDisponiblesParaBolson();
+  return filasContenidoBolson
+    .filter((fila) => fila.productoId && fila.cantidad > 0)
+    .map((fila) => {
+      const producto = disponibles.find((p) => p.id === fila.productoId);
+      if (!producto) return null;
+      return `${formatoCantidadItem(producto, fila.cantidad)} ${producto.nombre}`;
+    })
+    .filter(Boolean)
+    .join(", ");
+}
 
 function renderTabProductos() {
   const modalProducto = el("modal-producto");
@@ -374,13 +451,45 @@ function renderTabProductos() {
     el("np-precio-label").textContent = UNIDADES_VENTA[el("np-unidad").value].precioLabel;
   };
 
+  el("np-categoria").onchange = () => {
+    const selectCategoria = el("np-categoria");
+    const esBolson = esCategoriaBolson(selectCategoria.value);
+
+    el("np-precio").value = "";
+    filasContenidoBolson = [];
+    el("np-contenido-wrap").classList.toggle("oculto", !esBolson);
+
+    if (esBolson) {
+      el("np-unidad").value = "unidad";
+      el("np-precio-label").textContent = UNIDADES_VENTA.unidad.precioLabel;
+      el("np-nombre").value = selectCategoria.selectedOptions[0].textContent;
+      renderFilasContenidoBolson();
+    } else {
+      el("np-unidad").value = "kg";
+      el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
+      el("np-nombre").value = "";
+      el("np-nombre").placeholder = selectCategoria.value === "fruta" ? "Ej: Banana" : "Ej: Zanahoria";
+    }
+    el("np-unidad").disabled = esBolson;
+    el("np-nombre").disabled = esBolson;
+  };
+
+  el("btn-agregar-item-bolson").onclick = () => {
+    filasContenidoBolson.push({ productoId: "", cantidad: 0 });
+    renderFilasContenidoBolson();
+  };
+
   el("btn-abrir-modal-producto").onclick = () => {
     productoEnEdicion = null;
     el("modal-producto-titulo").textContent = "Nuevo producto";
     el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
+    el("np-nombre").disabled = false;
     el("np-categoria").value = "verdura";
+    filasContenidoBolson = [];
+    el("np-contenido-wrap").classList.add("oculto");
     el("np-unidad").value = "kg";
+    el("np-unidad").disabled = false;
     el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
     el("np-precio").value = "";
     el("btn-eliminar-producto-modal").classList.add("oculto");
@@ -398,26 +507,35 @@ function renderTabProductos() {
   el("btn-agregar-producto").onclick = async () => {
     const nombre = el("np-nombre").value.trim();
     const categoria = el("np-categoria").value;
+    const esBolson = esCategoriaBolson(categoria);
+    const contenido = esBolson ? contenidoBolsonATexto() : "";
+    const contenidoItems = esBolson ? filasContenidoBolson.filter((f) => f.productoId && f.cantidad > 0) : [];
     const unidadVenta = el("np-unidad").value;
     const precio = parsearMiles(el("np-precio").value);
     if (!nombre || !precio || precio <= 0) {
       alert("Completá nombre y precio válido.");
       return;
     }
+    if (esBolson && contenidoItems.length === 0) {
+      alert("Agregá al menos un item al bolsón.");
+      return;
+    }
 
     if (productoEnEdicion) {
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", productoEnEdicion.id), {
-        nombre, categoria, unidadVenta, precioPorKg: precio
+        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio
       });
       productoEnEdicion.nombre = nombre;
       productoEnEdicion.categoria = categoria;
+      productoEnEdicion.contenido = contenido;
+      productoEnEdicion.contenidoItems = contenidoItems;
       productoEnEdicion.unidadVenta = unidadVenta;
       productoEnEdicion.precioPorKg = precio;
     } else {
       const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
-        nombre, categoria, unidadVenta, precioPorKg: precio, activo: true
+        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, activo: true
       });
-      productosCache.push({ id: ref.id, nombre, categoria, unidadVenta, precioPorKg: precio, activo: true });
+      productosCache.push({ id: ref.id, nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, activo: true });
     }
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     modalProducto.classList.add("oculto");
@@ -433,8 +551,13 @@ function abrirModalEditarProducto(producto) {
   el("modal-producto-titulo").textContent = "Editar producto";
   el("btn-agregar-producto").textContent = "Guardar cambios";
   el("np-nombre").value = producto.nombre;
+  el("np-nombre").disabled = esCategoriaBolson(producto.categoria);
   el("np-categoria").value = producto.categoria;
+  filasContenidoBolson = (producto.contenidoItems || []).map((f) => ({ ...f }));
+  el("np-contenido-wrap").classList.toggle("oculto", !esCategoriaBolson(producto.categoria));
+  if (esCategoriaBolson(producto.categoria)) renderFilasContenidoBolson();
   el("np-unidad").value = unidad;
+  el("np-unidad").disabled = esCategoriaBolson(producto.categoria);
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
   el("np-precio").value = formatoMiles(producto.precioPorKg);
   el("btn-eliminar-producto-modal").classList.remove("oculto");
