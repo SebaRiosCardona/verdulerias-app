@@ -383,11 +383,16 @@ function renderTabProductos() {
     el("np-unidad").value = "kg";
     el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
     el("np-precio").value = "";
+    el("btn-eliminar-producto-modal").classList.add("oculto");
     modalProducto.classList.remove("oculto");
   };
 
   el("modal-producto-cancelar").onclick = () => {
     modalProducto.classList.add("oculto");
+  };
+
+  el("btn-eliminar-producto-modal").onclick = () => {
+    if (productoEnEdicion) eliminarProducto(productoEnEdicion);
   };
 
   el("btn-agregar-producto").onclick = async () => {
@@ -432,6 +437,7 @@ function abrirModalEditarProducto(producto) {
   el("np-unidad").value = unidad;
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
   el("np-precio").value = formatoMiles(producto.precioPorKg);
+  el("btn-eliminar-producto-modal").classList.remove("oculto");
   el("modal-producto").classList.remove("oculto");
 }
 
@@ -454,7 +460,7 @@ function renderListaProductosAdmin() {
     <div class="producto-admin" data-id="${p.id}">
       <div>
         <div style="font-weight:600;">${p.nombre}</div>
-        <div style="font-size:12px;color:var(--gris);">${unidad.precioLabel} · ${unidad.etiqueta}</div>
+        <div style="font-size:12px;color:var(--gris);">${(p.unidadVenta || "kg") === "unidad" ? unidad.precioLabel : `${unidad.precioLabel} · ${unidad.etiqueta}`}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="campo-precio">
@@ -466,9 +472,6 @@ function renderListaProductosAdmin() {
         </label>
         <button class="btn-editar-producto" data-accion="editar" title="Editar producto" aria-label="Editar producto">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-        </button>
-        <button class="btn-eliminar-producto" data-accion="eliminar" title="Eliminar producto" aria-label="Eliminar producto">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
         </button>
       </div>
     </div>
@@ -497,13 +500,13 @@ function renderListaProductosAdmin() {
     row.querySelector('[data-accion="editar"]').addEventListener("click", () => {
       abrirModalEditarProducto(producto);
     });
-
-    row.querySelector('[data-accion="eliminar"]').addEventListener("click", async () => {
-      if (confirm(`¿Eliminar "${producto.nombre}" del catálogo?`)) {
-        await deleteDoc(doc(db, "verdulerias", tiendaId, "productos", id));
-        productosCache = productosCache.filter((p) => p.id !== id);
-        renderListaProductosAdmin();
-      }
-    });
   });
+}
+
+async function eliminarProducto(producto) {
+  if (!confirm(`¿Eliminar "${producto.nombre}" del catálogo?`)) return;
+  await deleteDoc(doc(db, "verdulerias", tiendaId, "productos", producto.id));
+  productosCache = productosCache.filter((p) => p.id !== producto.id);
+  el("modal-producto").classList.add("oculto");
+  renderListaProductosAdmin();
 }
