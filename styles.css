@@ -622,13 +622,19 @@ main {
 .campo-direccion-con-boton {
   display: flex;
   gap: 6px;
+  margin-bottom: 10px;
 }
-.campo-direccion-con-boton input {
+.campo-direccion-con-boton input,
+.form-nuevo-producto .campo-direccion-con-boton input {
   flex: 1;
+  width: auto;
   min-width: 0;
 }
-#btn-buscar-direccion {
+#btn-buscar-direccion,
+#btn-buscar-direccion-local {
   flex-shrink: 0;
+  width: auto;
+  margin-top: 0;
   padding: 0 12px;
   border-radius: 8px;
   border: none;

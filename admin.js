@@ -315,6 +315,60 @@ let ubicacionLocalSeleccionada = null;
 let mapaLocal = null;
 let markerLocal = null;
 
+function ubicarPinLocal(latlng, zoom) {
+  ubicacionLocalSeleccionada = { lat: latlng.lat, lng: latlng.lng };
+  if (markerLocal) {
+    markerLocal.setLatLng(latlng);
+  } else {
+    markerLocal = L.marker(latlng).addTo(mapaLocal);
+  }
+  if (zoom) {
+    mapaLocal.setView(latlng, zoom);
+  }
+}
+
+async function buscarDireccionInversaLocal(latlng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`;
+    const res = await fetch(url);
+    const resultado = await res.json();
+    const direccion = resultado?.address;
+    if (!direccion) return;
+    const calle = [direccion.road, direccion.house_number].filter(Boolean).join(" ");
+    if (calle) {
+      el("local-direccion").value = calle;
+    }
+  } catch (e) {
+    // si falla, se puede seguir escribiendo la dirección a mano
+  }
+}
+
+async function buscarDireccionEnMapaLocal() {
+  const direccion = el("local-direccion").value.trim();
+  const elBuscando = el("local-direccion-buscando");
+  const elNoEncontrada = el("local-direccion-no-encontrada");
+  elNoEncontrada.classList.add("oculto");
+  if (!direccion || !mapaLocal) return;
+
+  const centro = ubicacionLocalSeleccionada || MAPA_CENTRO_DEFECTO;
+  elBuscando.classList.remove("oculto");
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&viewbox=${centro.lng - 0.3},${centro.lat + 0.3},${centro.lng + 0.3},${centro.lat - 0.3}&bounded=0&q=${encodeURIComponent(direccion)}`;
+    const res = await fetch(url);
+    const resultados = await res.json();
+    elBuscando.classList.add("oculto");
+    if (!resultados.length) {
+      elNoEncontrada.classList.remove("oculto");
+      return;
+    }
+    const { lat, lon } = resultados[0];
+    ubicarPinLocal({ lat: parseFloat(lat), lng: parseFloat(lon) }, 16);
+  } catch (e) {
+    elBuscando.classList.add("oculto");
+    elNoEncontrada.classList.remove("oculto");
+  }
+}
+
 function inicializarMapaLocal() {
   if (mapaLocal) return;
 
@@ -333,13 +387,11 @@ function inicializarMapaLocal() {
   }
 
   mapaLocal.on("click", (ev) => {
-    ubicacionLocalSeleccionada = { lat: ev.latlng.lat, lng: ev.latlng.lng };
-    if (markerLocal) {
-      markerLocal.setLatLng(ev.latlng);
-    } else {
-      markerLocal = L.marker(ev.latlng).addTo(mapaLocal);
-    }
+    ubicarPinLocal(ev.latlng);
+    buscarDireccionInversaLocal(ev.latlng);
   });
+
+  el("btn-buscar-direccion-local").addEventListener("click", buscarDireccionEnMapaLocal);
 
   setTimeout(() => mapaLocal.invalidateSize(), 0);
 }

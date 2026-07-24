@@ -107,6 +107,13 @@
         <div class="form-nuevo-producto">
           <h3 style="margin:0;">Envío a domicilio</h3>
           <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Marcá la ubicación de tu local. El costo de envío se calcula según la distancia hasta la casa del cliente.</p>
+          <label>Dirección de tu local</label>
+          <div class="campo-direccion-con-boton">
+            <input id="local-direccion" type="text" placeholder="Calle y número" />
+            <button type="button" id="btn-buscar-direccion-local">Buscar en el mapa</button>
+          </div>
+          <p id="local-direccion-buscando" class="oculto" style="font-size:12.5px;color:var(--gris);margin:4px 0 0;">Buscando...</p>
+          <p id="local-direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
           <div id="mapa-local" class="mapa-contenedor"></div>
           <p id="mapa-local-hint" style="font-size:12px;color:var(--gris);margin:8px 0 0;">Tocá el mapa para marcar tu local.</p>
           <label>Costo base</label>
