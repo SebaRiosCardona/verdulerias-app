@@ -88,6 +88,17 @@ const CLAVE_SESION = `verduleria_sesion_${tiendaId}`;
 // ---------------------------------------------------------------
 const el = (id) => document.getElementById(id);
 
+const modalAviso = el("modal-aviso");
+const modalAvisoTexto = el("modal-aviso-texto");
+const modalAvisoOk = el("modal-aviso-ok");
+
+function mostrarAviso(mensaje) {
+  modalAvisoTexto.textContent = mensaje;
+  modalAviso.classList.remove("oculto");
+}
+
+modalAvisoOk.addEventListener("click", () => modalAviso.classList.add("oculto"));
+
 const pantallaCarga = el("pantalla-carga");
 const spinnerCarga = el("spinner-carga");
 const errorCarga = el("error-carga");
@@ -554,20 +565,20 @@ function abrirModalConfirmarPedido(resumen) {
 
   modalConfirmarEnviar.onclick = () => {
     if (!tipoEntregaSeleccionado) {
-      alert("Elegí cómo querés recibir tu pedido.");
+      mostrarAviso("Elegí cómo querés recibir tu pedido.");
       return;
     }
     if (tipoEntregaSeleccionado === "retiro" && !momentoSeleccionado) {
-      alert("Elegí en qué momento del día pasás a buscarlo.");
+      mostrarAviso("Elegí en qué momento del día pasás a buscarlo.");
       return;
     }
     if (tipoEntregaSeleccionado === "envio") {
       if (!tiendaInfo?.ubicacion) {
-        alert("Este local todavía no tiene envío a domicilio configurado.");
+        mostrarAviso("Este local todavía no tiene envío a domicilio configurado.");
         return;
       }
       if (!pinClienteActual) {
-        alert("Marcá tu ubicación en el mapa.");
+        mostrarAviso("Marcá tu ubicación en el mapa.");
         return;
       }
       const nombre = el("direccion-nombre").value.trim();
@@ -575,7 +586,7 @@ function abrirModalConfirmarPedido(resumen) {
       const direccion = el("direccion-calle").value.trim();
       const telefono = el("direccion-telefono").value.trim();
       if (!nombre || !apellido || !direccion || !telefono) {
-        alert("Completá los datos de entrega.");
+        mostrarAviso("Completá los datos de entrega.");
         return;
       }
     }
@@ -648,7 +659,7 @@ async function enviarPedido(resumen) {
     mostrarConfirmacion();
   } catch (e) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    alert("No pudimos confirmar el pedido: " + e.message);
+    mostrarAviso("No pudimos confirmar el pedido: " + e.message);
     modalConfirmarEnviar.disabled = false;
     modalConfirmarEnviar.textContent = "Enviar pedido";
   }

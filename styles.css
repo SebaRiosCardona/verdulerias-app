@@ -489,6 +489,28 @@ main {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+.modal-aviso {
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+.modal-aviso p {
+  margin: 0 0 18px;
+  font-size: 14.5px;
+  color: var(--texto);
+  line-height: 1.5;
+}
+.modal-aviso button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 700;
+  font-size: 13.5px;
+}
 .modal-confirmar-pedido h3 {
   margin: 0 0 6px;
   color: var(--verde-oscuro);
