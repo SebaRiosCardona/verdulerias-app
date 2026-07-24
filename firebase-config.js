@@ -23,3 +23,7 @@ export const TIENDA_POR_DEFECTO = "demo";
 // Cada verdulería además tiene su propio "adminPassword" guardado en su
 // documento de Firestore (verdulerias/{tiendaId}.adminPassword).
 export const SUPERADMIN_PASSWORD = "Seba1357";
+
+// Vista inicial del mapa de envío cuando la tienda todavía no cargó su ubicación.
+export const MAPA_CENTRO_DEFECTO = { lat: -31.4201, lng: -64.1888 }; // Córdoba Capital
+export const MAPA_ZOOM_DEFECTO = 12;

@@ -1,4 +1,4 @@
-import { firebaseConfig, TIENDA_POR_DEFECTO } from "./firebase-config.js";
+import { firebaseConfig, TIENDA_POR_DEFECTO, MAPA_CENTRO_DEFECTO, MAPA_ZOOM_DEFECTO } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged
@@ -122,9 +122,18 @@ const modalConfirmarTotales = el("modal-confirmar-totales");
 const modalConfirmarCancelar = el("modal-confirmar-cancelar");
 const modalConfirmarEnviar = el("modal-confirmar-enviar");
 const botonesMomento = document.querySelectorAll(".momento-opcion");
+const botonesEntrega = document.querySelectorAll(".entrega-opcion");
+const modalConfirmarMomentoWrap = el("modal-confirmar-momento-wrap");
+const modalConfirmarDireccion = el("modal-confirmar-direccion");
+const direccionSinUbicacionLocal = el("direccion-sin-ubicacion-local");
 
 const MOMENTOS_TEXTO = { manana: "Mañana", tarde: "Tarde", noche: "Noche" };
 let momentoSeleccionado = null;
+let tipoEntregaSeleccionado = null;
+let resumenActual = null;
+let pinClienteActual = null;
+let mapaCliente = null;
+let markerCliente = null;
 
 botonesMomento.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -132,6 +141,75 @@ botonesMomento.forEach((btn) => {
     botonesMomento.forEach((b) => b.classList.toggle("activo", b === btn));
   });
 });
+
+botonesEntrega.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    tipoEntregaSeleccionado = btn.dataset.entrega;
+    botonesEntrega.forEach((b) => b.classList.toggle("activo", b === btn));
+
+    if (tipoEntregaSeleccionado === "envio") {
+      modalConfirmarMomentoWrap.classList.add("oculto");
+      modalConfirmarDireccion.classList.remove("oculto");
+      if (mapaCliente) {
+        setTimeout(() => mapaCliente.invalidateSize(), 0);
+      }
+    } else {
+      modalConfirmarDireccion.classList.add("oculto");
+      modalConfirmarMomentoWrap.classList.remove("oculto");
+    }
+    renderTotalesModal();
+  });
+});
+
+function distanciaKm(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const s = Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+function inicializarMapaCliente() {
+  if (mapaCliente) return;
+
+  const centro = tiendaInfo?.ubicacion || MAPA_CENTRO_DEFECTO;
+  const zoom = tiendaInfo?.ubicacion ? 14 : MAPA_ZOOM_DEFECTO;
+
+  mapaCliente = L.map("mapa-direccion-cliente").setView([centro.lat, centro.lng], zoom);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap",
+  }).addTo(mapaCliente);
+
+  mapaCliente.on("click", (ev) => {
+    pinClienteActual = { lat: ev.latlng.lat, lng: ev.latlng.lng };
+    if (markerCliente) {
+      markerCliente.setLatLng(ev.latlng);
+    } else {
+      markerCliente = L.marker(ev.latlng).addTo(mapaCliente);
+    }
+    renderTotalesModal();
+  });
+}
+
+function costoEnvioActual() {
+  if (tipoEntregaSeleccionado !== "envio") return 0;
+  if (!pinClienteActual || !tiendaInfo?.ubicacion) return 0;
+  const km = distanciaKm(tiendaInfo.ubicacion, pinClienteActual);
+  return Math.round((tiendaInfo.envioBase || 0) + km * (tiendaInfo.envioPorKm || 0));
+}
+
+function renderTotalesModal() {
+  if (!resumenActual) return;
+  const costoEnvio = costoEnvioActual();
+  const total = resumenActual.total + costoEnvio;
+  modalConfirmarTotales.innerHTML = `
+    <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(resumenActual.subtotal)}</span></div>
+    ${resumenActual.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (10%)</span><span>-${formatoMoneda(resumenActual.descuentoMonto)}</span></div>` : ""}
+    ${costoEnvio > 0 ? `<div class="fila-total"><span>Envío</span><span>${formatoMoneda(costoEnvio)}</span></div>` : ""}
+    <div class="fila-total a-pagar"><span>Total</span><span>${formatoMoneda(total)}</span></div>
+  `;
+}
 
 const listaPedidos = el("lista-pedidos");
 
@@ -417,6 +495,8 @@ btnConfirmar.addEventListener("click", () => {
 });
 
 function abrirModalConfirmarPedido(resumen) {
+  resumenActual = resumen;
+
   modalConfirmarItems.innerHTML = resumen.items.map((it) => `
     <div class="pedido-item-fila">
       <span>${it.nombre} — ${formatoCantidad(it, it.kg)}</span>
@@ -424,23 +504,73 @@ function abrirModalConfirmarPedido(resumen) {
     </div>
   `).join("");
 
-  modalConfirmarTotales.innerHTML = `
-    <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(resumen.subtotal)}</span></div>
-    ${resumen.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (10%)</span><span>-${formatoMoneda(resumen.descuentoMonto)}</span></div>` : ""}
-    <div class="fila-total a-pagar"><span>Total</span><span>${formatoMoneda(resumen.total)}</span></div>
-  `;
-
   momentoSeleccionado = null;
   botonesMomento.forEach((b) => b.classList.remove("activo"));
+
+  tipoEntregaSeleccionado = null;
+  botonesEntrega.forEach((b) => b.classList.remove("activo"));
+  modalConfirmarMomentoWrap.classList.add("oculto");
+  modalConfirmarDireccion.classList.add("oculto");
+
+  pinClienteActual = null;
+  if (markerCliente && mapaCliente) {
+    mapaCliente.removeLayer(markerCliente);
+    markerCliente = null;
+  }
+
+  if (!tiendaInfo?.ubicacion) {
+    el("mapa-direccion-cliente").classList.add("oculto");
+    direccionSinUbicacionLocal.classList.remove("oculto");
+  } else {
+    el("mapa-direccion-cliente").classList.remove("oculto");
+    direccionSinUbicacionLocal.classList.add("oculto");
+    inicializarMapaCliente();
+    if (mapaCliente) {
+      const centro = tiendaInfo.ubicacion;
+      mapaCliente.setView([centro.lat, centro.lng], 14);
+      setTimeout(() => mapaCliente.invalidateSize(), 0);
+    }
+  }
+  el("direccion-nombre").value = "";
+  el("direccion-apellido").value = "";
+  el("direccion-calle").value = "";
+  el("direccion-piso").value = "";
+  el("direccion-telefono").value = "";
+  el("direccion-notas").value = "";
+
+  renderTotalesModal();
 
   modalConfirmarEnviar.disabled = false;
   modalConfirmarEnviar.textContent = "Enviar pedido";
   modalConfirmarPedido.classList.remove("oculto");
+  document.body.classList.add("body-bloqueado");
 
   modalConfirmarEnviar.onclick = () => {
-    if (!momentoSeleccionado) {
+    if (!tipoEntregaSeleccionado) {
+      alert("Elegí cómo querés recibir tu pedido.");
+      return;
+    }
+    if (tipoEntregaSeleccionado === "retiro" && !momentoSeleccionado) {
       alert("Elegí en qué momento del día pasás a buscarlo.");
       return;
+    }
+    if (tipoEntregaSeleccionado === "envio") {
+      if (!tiendaInfo?.ubicacion) {
+        alert("Este local todavía no tiene envío a domicilio configurado.");
+        return;
+      }
+      if (!pinClienteActual) {
+        alert("Marcá tu ubicación en el mapa.");
+        return;
+      }
+      const nombre = el("direccion-nombre").value.trim();
+      const apellido = el("direccion-apellido").value.trim();
+      const direccion = el("direccion-calle").value.trim();
+      const telefono = el("direccion-telefono").value.trim();
+      if (!nombre || !apellido || !direccion || !telefono) {
+        alert("Completá los datos de entrega.");
+        return;
+      }
     }
     enviarPedido(resumen);
   };
@@ -448,6 +578,7 @@ function abrirModalConfirmarPedido(resumen) {
 
 function cerrarModalConfirmarPedido() {
   modalConfirmarPedido.classList.add("oculto");
+  document.body.classList.remove("body-bloqueado");
 }
 
 modalConfirmarCancelar.addEventListener("click", cerrarModalConfirmarPedido);
@@ -458,6 +589,20 @@ async function enviarPedido(resumen) {
 
   const ventanaWhatsApp = tiendaInfo?.telefonoContacto ? window.open("", "_blank") : null;
 
+  const esEnvio = tipoEntregaSeleccionado === "envio";
+  const costoEnvio = costoEnvioActual();
+  const distancia = esEnvio && tiendaInfo?.ubicacion && pinClienteActual ? distanciaKm(tiendaInfo.ubicacion, pinClienteActual) : null;
+  const ubicacionEntrega = esEnvio ? pinClienteActual : null;
+  const direccionEntrega = esEnvio ? {
+    nombre: el("direccion-nombre").value.trim(),
+    apellido: el("direccion-apellido").value.trim(),
+    direccion: el("direccion-calle").value.trim(),
+    pisoDepto: el("direccion-piso").value.trim(),
+    telefono: el("direccion-telefono").value.trim(),
+    notas: el("direccion-notas").value.trim(),
+  } : null;
+  const totalConEnvio = resumen.total + costoEnvio;
+
   try {
     const pedidoRef = await addDoc(collection(db, "verdulerias", tiendaId, "pedidos"), {
       clienteId: cliente.clienteId,
@@ -467,8 +612,13 @@ async function enviarPedido(resumen) {
       subtotal: resumen.subtotal,
       descuentoAplicado: resumen.cumpleMinimo,
       descuentoMonto: resumen.descuentoMonto,
-      total: resumen.total,
-      momentoRetiro: momentoSeleccionado,
+      tipoEntrega: tipoEntregaSeleccionado,
+      momentoRetiro: esEnvio ? null : momentoSeleccionado,
+      ubicacionEntrega,
+      distanciaKm: distancia,
+      costoEnvio,
+      direccionEntrega,
+      total: totalConEnvio,
       pagado: false,
       metodoPago: null,
       entregado: false,
@@ -480,7 +630,7 @@ async function enviarPedido(resumen) {
     ultimoPedidoId = pedidoRef.id;
     carrito = {};
 
-    const linkWhatsApp = armarLinkWhatsApp(resumen, momentoSeleccionado);
+    const linkWhatsApp = armarLinkWhatsApp({ ...resumen, total: totalConEnvio, tipoEntrega: tipoEntregaSeleccionado, ubicacionEntrega, distanciaKm: distancia, costoEnvio, direccionEntrega }, momentoSeleccionado);
     if (linkWhatsApp && ventanaWhatsApp) {
       ventanaWhatsApp.location.href = linkWhatsApp;
     } else if (linkWhatsApp) {
@@ -545,7 +695,15 @@ function armarLinkWhatsApp(p, momentoRetiro) {
     "",
     `Total: ${formatoMoneda(p.total)}`,
   ];
-  if (momentoRetiro && MOMENTOS_TEXTO[momentoRetiro]) {
+  if (p.tipoEntrega === "envio" && p.direccionEntrega) {
+    const d = p.direccionEntrega;
+    lineasWhatsApp.push("");
+    lineasWhatsApp.push(`Envío a: ${d.direccion}${d.pisoDepto ? ", " + d.pisoDepto : ""}`);
+    lineasWhatsApp.push(`Envío: ${formatoMoneda(p.costoEnvio || 0)}${p.distanciaKm ? ` (${p.distanciaKm.toFixed(1)} km)` : ""}`);
+    if (p.ubicacionEntrega) lineasWhatsApp.push(`Ver ubicación: https://maps.google.com/?q=${p.ubicacionEntrega.lat},${p.ubicacionEntrega.lng}`);
+    lineasWhatsApp.push(`A nombre de: ${d.nombre} ${d.apellido} — Tel: ${d.telefono}`);
+    if (d.notas) lineasWhatsApp.push(`Notas: ${d.notas}`);
+  } else if (momentoRetiro && MOMENTOS_TEXTO[momentoRetiro]) {
     lineasWhatsApp.push(`Paso a buscarlo por la ${MOMENTOS_TEXTO[momentoRetiro]}`);
   }
   const mensajeWhatsApp = encodeURIComponent(lineasWhatsApp.join("\n"));
@@ -571,15 +729,21 @@ function renderPedido(p) {
     ? `Mandanos tu pedido a <a href="${linkWhatsApp}" target="_blank">WhatsApp</a>. Una vez que lo confirmemos, te pasamos el total y el alias para transferir.`
     : `Esperá a que confirmemos tu pedido para recibir el total y el alias para transferir.`;
 
+  const entregaTexto = p.tipoEntrega === "envio"
+    ? `Envío a domicilio${p.distanciaKm ? " — " + p.distanciaKm.toFixed(1) + " km" : ""}`
+    : "Retiro en el local";
+
   return `
     <div class="pedido-card ${esReciente ? "recien-confirmado" : ""}">
       <div class="pedido-header">
         <div class="pedido-fecha">${fechaTexto} · ${formatoKg(p.pesoTotalKg)}</div>
       </div>
+      <div class="pedido-entrega">${entregaTexto}</div>
       <div class="pedido-items">${itemsHtml}</div>
       <div class="pedido-totales">
         <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(p.subtotal)}</span></div>
         ${p.descuentoAplicado ? `<div class="fila-total ahorro"><span>Ahorraste (10%)</span><span>-${formatoMoneda(p.descuentoMonto)}</span></div>` : ""}
+        ${p.costoEnvio ? `<div class="fila-total"><span>Envío</span><span>${formatoMoneda(p.costoEnvio)}</span></div>` : ""}
         <div class="fila-total a-pagar"><span>Total a pagar</span><span>${formatoMoneda(p.total)}</span></div>
       </div>
       <div class="nota-pago">${notaPago}</div>

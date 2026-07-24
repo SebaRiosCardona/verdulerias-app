@@ -7,6 +7,7 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="logo.png" />
 <meta name="theme-color" content="#3a7d44" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -122,13 +123,37 @@
       <p>Revisá que todo esté correcto. Una vez enviado, recibiremos tu pedido por WhatsApp.</p>
       <div id="modal-confirmar-items" class="modal-confirmar-items"></div>
       <div id="modal-confirmar-totales" class="modal-confirmar-totales"></div>
-      <div class="modal-confirmar-momento">
+      <div class="modal-confirmar-entrega">
+        <label>¿Cómo querés recibir tu pedido?</label>
+        <div class="entrega-opciones">
+          <button type="button" class="entrega-opcion" data-entrega="retiro">🏠 Retirar en el local</button>
+          <button type="button" class="entrega-opcion" data-entrega="envio">🚚 Enviar a mi casa</button>
+        </div>
+      </div>
+      <div id="modal-confirmar-momento-wrap" class="modal-confirmar-momento oculto">
         <label>¿En qué momento del día pasás a buscarlo?</label>
         <div class="momento-opciones">
           <button type="button" class="momento-opcion" data-momento="manana">🌅 Mañana</button>
           <button type="button" class="momento-opcion" data-momento="tarde">☀️ Tarde</button>
           <button type="button" class="momento-opcion" data-momento="noche">🌙 Noche</button>
         </div>
+      </div>
+      <div id="modal-confirmar-direccion" class="modal-confirmar-direccion oculto">
+        <label>Marcá tu ubicación en el mapa</label>
+        <div id="mapa-direccion-cliente" class="mapa-contenedor"></div>
+        <p id="direccion-sin-ubicacion-local" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:8px 0 0;">Este local todavía no tiene envío a domicilio configurado.</p>
+        <label>Nombre</label>
+        <input id="direccion-nombre" type="text" />
+        <label>Apellido</label>
+        <input id="direccion-apellido" type="text" />
+        <label>Dirección</label>
+        <input id="direccion-calle" type="text" placeholder="Calle y número" />
+        <label>Piso / depto (opcional)</label>
+        <input id="direccion-piso" type="text" />
+        <label>Teléfono de contacto</label>
+        <input id="direccion-telefono" type="tel" />
+        <label>Notas para el repartidor (opcional)</label>
+        <input id="direccion-notas" type="text" placeholder="Ej: timbre no funciona, dejar en portería" />
       </div>
       <div class="modal-confirmar-acciones">
         <button type="button" id="modal-confirmar-cancelar" class="btn-modal-cancelar">Seguir editando</button>
@@ -137,6 +162,7 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-import { firebaseConfig, TIENDA_POR_DEFECTO } from "./firebase-config.js";
+import { firebaseConfig, TIENDA_POR_DEFECTO, MAPA_CENTRO_DEFECTO, MAPA_ZOOM_DEFECTO } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged
@@ -176,6 +176,9 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     ["hoy", "pedidos", "productos", "configuracion"].forEach((t) => {
       el(`tab-${t}`).classList.toggle("oculto", t !== btn.dataset.tab);
     });
+    if (btn.dataset.tab === "configuracion" && mapaLocal) {
+      setTimeout(() => mapaLocal.invalidateSize(), 0);
+    }
   });
 });
 
@@ -256,6 +259,11 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
     const fecha = new Date(p.fecha);
     const fechaTexto = fecha.toLocaleDateString("es-AR") + " " + fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
     const itemsHtml = (p.items || []).map((it) => `<li>${it.nombre} — ${formatoCantidad(it)}</li>`).join("");
+    const d = p.direccionEntrega;
+    const linkUbicacion = p.ubicacionEntrega ? `<a href="https://maps.google.com/?q=${p.ubicacionEntrega.lat},${p.ubicacionEntrega.lng}" target="_blank">Ver ubicación</a>` : "";
+    const entregaHtml = p.tipoEntrega === "envio"
+      ? `<div style="font-size:13px;">🚚 Envío${p.distanciaKm ? " — " + p.distanciaKm.toFixed(1) + " km" : ""}${d ? `: ${d.direccion}${d.pisoDepto ? ", " + d.pisoDepto : ""} · ${d.nombre} ${d.apellido} · Tel: ${d.telefono}${d.notas ? " · " + d.notas : ""}` : ""}${linkUbicacion ? " · " + linkUbicacion : ""}</div>`
+      : `<div style="font-size:13px;">🏠 Retiro en el local${MOMENTOS_TEXTO[p.momentoRetiro] ? ` · Retira por la ${MOMENTOS_TEXTO[p.momentoRetiro]}` : ""}</div>`;
     return `
       <div class="pedido-admin" data-id="${p.id}">
         <div style="display:flex;justify-content:space-between;">
@@ -263,7 +271,8 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
           <span style="font-size:12px;color:var(--gris);">${fechaTexto}</span>
         </div>
         <ul class="lista-items-pedido">${itemsHtml}</ul>
-        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}${MOMENTOS_TEXTO[p.momentoRetiro] ? ` · Retira por la ${MOMENTOS_TEXTO[p.momentoRetiro]}` : ""}</div>
+        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}</div>
+        ${entregaHtml}
         <div style="font-weight:700;margin-top:4px;">Total: ${formatoMoneda(p.total)}</div>
         <div class="fila-acciones">
           <button data-accion="entregado" class="${p.entregado ? "btn-toggle-si" : "btn-toggle-no"}">${p.entregado ? "Entregado" : "No entregado"}</button>
@@ -302,6 +311,39 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
 // ---------------------------------------------------------------
 // Tab Configuración
 // ---------------------------------------------------------------
+let ubicacionLocalSeleccionada = null;
+let mapaLocal = null;
+let markerLocal = null;
+
+function inicializarMapaLocal() {
+  if (mapaLocal) return;
+
+  ubicacionLocalSeleccionada = tiendaInfo.ubicacion || null;
+
+  const centro = ubicacionLocalSeleccionada || MAPA_CENTRO_DEFECTO;
+  const zoom = ubicacionLocalSeleccionada ? 15 : MAPA_ZOOM_DEFECTO;
+
+  mapaLocal = L.map("mapa-local").setView([centro.lat, centro.lng], zoom);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap",
+  }).addTo(mapaLocal);
+
+  if (ubicacionLocalSeleccionada) {
+    markerLocal = L.marker([ubicacionLocalSeleccionada.lat, ubicacionLocalSeleccionada.lng]).addTo(mapaLocal);
+  }
+
+  mapaLocal.on("click", (ev) => {
+    ubicacionLocalSeleccionada = { lat: ev.latlng.lat, lng: ev.latlng.lng };
+    if (markerLocal) {
+      markerLocal.setLatLng(ev.latlng);
+    } else {
+      markerLocal = L.marker(ev.latlng).addTo(mapaLocal);
+    }
+  });
+
+  setTimeout(() => mapaLocal.invalidateSize(), 0);
+}
+
 function renderTabConfiguracion() {
   const inputTelefonoCfg = el("cfg-telefono");
   inputTelefonoCfg.value = tiendaInfo.telefonoContacto || "";
@@ -310,6 +352,33 @@ function renderTabConfiguracion() {
     await updateDoc(doc(db, "verdulerias", tiendaId), { telefonoContacto });
     tiendaInfo.telefonoContacto = telefonoContacto;
     alert("Teléfono de contacto guardado.");
+  };
+
+  inicializarMapaLocal();
+
+  const inputEnvioBase = el("cfg-envio-base");
+  const inputEnvioPorKm = el("cfg-envio-por-km");
+  inputEnvioBase.value = tiendaInfo.envioBase ? formatoMiles(tiendaInfo.envioBase) : "";
+  inputEnvioPorKm.value = tiendaInfo.envioPorKm ? formatoMiles(tiendaInfo.envioPorKm) : "";
+  activarFormatoMiles(inputEnvioBase);
+  activarFormatoMiles(inputEnvioPorKm);
+
+  el("btn-guardar-envio").onclick = async () => {
+    if (!ubicacionLocalSeleccionada) {
+      alert("Marcá la ubicación de tu local en el mapa.");
+      return;
+    }
+    const envioBase = parsearMiles(inputEnvioBase.value) || 0;
+    const envioPorKm = parsearMiles(inputEnvioPorKm.value) || 0;
+    await updateDoc(doc(db, "verdulerias", tiendaId), {
+      ubicacion: ubicacionLocalSeleccionada,
+      envioBase,
+      envioPorKm,
+    });
+    tiendaInfo.ubicacion = ubicacionLocalSeleccionada;
+    tiendaInfo.envioBase = envioBase;
+    tiendaInfo.envioPorKm = envioPorKm;
+    alert("Datos de envío guardados.");
   };
 
   const inputPasswordActual = el("cfg-password-actual");
