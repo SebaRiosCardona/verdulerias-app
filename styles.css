@@ -508,6 +508,9 @@ main {
   padding-top: 10px;
   font-size: 14px;
 }
+#modal-confirmar-totales-envio {
+  margin-top: 14px;
+}
 .modal-confirmar-momento {
   border-top: 1px solid var(--gris-claro);
   padding-top: 14px;
@@ -595,6 +598,8 @@ main {
   font-size: 14px;
 }
 .mapa-contenedor {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   height: 240px;
   border-radius: 10px;
@@ -615,8 +620,8 @@ main {
   font-size: 13.5px;
 }
 .btn-modal-cancelar {
-  background: #f1f1f1;
-  color: var(--gris);
+  background: var(--verde-claro);
+  color: var(--verde-oscuro);
 }
 .btn-modal-enviar {
   background: var(--verde);

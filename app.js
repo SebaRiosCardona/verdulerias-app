@@ -47,10 +47,14 @@ function formatoKg(valor) {
 // ---------------------------------------------------------------
 // Unidades de venta
 // ---------------------------------------------------------------
+function formatoGramos(kg) {
+  return `${Math.round(kg * 1000)}g`;
+}
+
 const UNIDADES_VENTA = {
   kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   medio_kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
-  "100g": { paso: 0.1, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
+  "100g": { paso: 0.1, formato: (c) => c < 1 ? formatoGramos(c) : formatoKg(c), kgPorUnidad: 1 },
   unidad: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
 };
 
@@ -119,6 +123,7 @@ const btnSalir2 = el("btn-salir-2");
 const modalConfirmarPedido = el("modal-confirmar-pedido");
 const modalConfirmarItems = el("modal-confirmar-items");
 const modalConfirmarTotales = el("modal-confirmar-totales");
+const modalConfirmarTotalesEnvio = el("modal-confirmar-totales-envio");
 const modalConfirmarCancelar = el("modal-confirmar-cancelar");
 const modalConfirmarEnviar = el("modal-confirmar-enviar");
 const botonesMomento = document.querySelectorAll(".momento-opcion");
@@ -203,12 +208,14 @@ function renderTotalesModal() {
   if (!resumenActual) return;
   const costoEnvio = costoEnvioActual();
   const total = resumenActual.total + costoEnvio;
-  modalConfirmarTotales.innerHTML = `
+  const html = `
     <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(resumenActual.subtotal)}</span></div>
     ${resumenActual.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (10%)</span><span>-${formatoMoneda(resumenActual.descuentoMonto)}</span></div>` : ""}
     ${costoEnvio > 0 ? `<div class="fila-total"><span>Envío</span><span>${formatoMoneda(costoEnvio)}</span></div>` : ""}
     <div class="fila-total a-pagar"><span>Total</span><span>${formatoMoneda(total)}</span></div>
   `;
+  modalConfirmarTotales.innerHTML = html;
+  modalConfirmarTotalesEnvio.innerHTML = html;
 }
 
 const listaPedidos = el("lista-pedidos");
