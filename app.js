@@ -240,7 +240,24 @@ function inicializarMapaCliente() {
 
   mapaCliente.on("click", (ev) => {
     ubicarPinCliente(ev.latlng);
+    buscarDireccionInversa(ev.latlng);
   });
+}
+
+async function buscarDireccionInversa(latlng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`;
+    const res = await fetch(url);
+    const resultado = await res.json();
+    const direccion = resultado?.address;
+    if (!direccion) return;
+    const calle = [direccion.road, direccion.house_number].filter(Boolean).join(" ");
+    if (calle) {
+      el("direccion-calle").value = calle;
+    }
+  } catch (e) {
+    // si falla, el cliente puede seguir escribiendo la dirección a mano
+  }
 }
 
 function costoEnvioActual() {
@@ -584,8 +601,6 @@ function abrirModalConfirmarPedido(resumen) {
       setTimeout(() => mapaCliente.invalidateSize(), 0);
     }
   }
-  el("direccion-nombre").value = "";
-  el("direccion-apellido").value = "";
   el("direccion-calle").value = "";
   el("direccion-piso").value = "";
   el("direccion-telefono").value = "";
@@ -618,11 +633,9 @@ function abrirModalConfirmarPedido(resumen) {
         mostrarAviso("Marcá tu ubicación en el mapa.");
         return;
       }
-      const nombre = el("direccion-nombre").value.trim();
-      const apellido = el("direccion-apellido").value.trim();
       const direccion = el("direccion-calle").value.trim();
       const telefono = el("direccion-telefono").value.trim();
-      if (!nombre || !apellido || !direccion || !telefono) {
+      if (!direccion || !telefono) {
         mostrarAviso("Completá los datos de entrega.");
         return;
       }
@@ -649,8 +662,8 @@ async function enviarPedido(resumen) {
   const distancia = esEnvio && tiendaInfo?.ubicacion && pinClienteActual ? distanciaKm(tiendaInfo.ubicacion, pinClienteActual) : null;
   const ubicacionEntrega = esEnvio ? pinClienteActual : null;
   const direccionEntrega = esEnvio ? {
-    nombre: el("direccion-nombre").value.trim(),
-    apellido: el("direccion-apellido").value.trim(),
+    nombre: cliente.nombre,
+    apellido: cliente.apellido,
     direccion: el("direccion-calle").value.trim(),
     pisoDepto: el("direccion-piso").value.trim(),
     telefono: el("direccion-telefono").value.trim(),
