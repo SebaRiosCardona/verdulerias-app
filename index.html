@@ -139,7 +139,7 @@
         </div>
       </div>
       <div id="modal-confirmar-direccion" class="modal-confirmar-direccion oculto">
-        <label>Marcá tu ubicación en el mapa</label>
+        <label>Utilizaremos esta ubicación para enviarte el pedido, ¡asegurate de marcarla bien!</label>
         <div id="mapa-direccion-cliente" class="mapa-contenedor"></div>
         <p id="direccion-sin-ubicacion-local" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:8px 0 0;">Este local todavía no tiene envío a domicilio configurado.</p>
         <label>Nombre</label>
@@ -147,7 +147,12 @@
         <label>Apellido</label>
         <input id="direccion-apellido" type="text" />
         <label>Dirección</label>
-        <input id="direccion-calle" type="text" placeholder="Calle y número" />
+        <div class="campo-direccion-con-boton">
+          <input id="direccion-calle" type="text" placeholder="Calle y número" />
+          <button type="button" id="btn-buscar-direccion">Buscar en el mapa</button>
+        </div>
+        <p id="direccion-buscando" class="oculto" style="font-size:12.5px;color:var(--gris);margin:4px 0 0;">Buscando...</p>
+        <p id="direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
         <label>Piso / depto (opcional)</label>
         <input id="direccion-piso" type="text" />
         <label>Teléfono de contacto</label>

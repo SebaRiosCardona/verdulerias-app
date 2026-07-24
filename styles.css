@@ -619,6 +619,25 @@ main {
   font-family: inherit;
   font-size: 14px;
 }
+.campo-direccion-con-boton {
+  display: flex;
+  gap: 6px;
+}
+.campo-direccion-con-boton input {
+  flex: 1;
+  min-width: 0;
+}
+#btn-buscar-direccion {
+  flex-shrink: 0;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--verde-claro);
+  color: var(--verde-oscuro);
+  font-weight: 600;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
 .mapa-contenedor {
   position: relative;
   isolation: isolate;

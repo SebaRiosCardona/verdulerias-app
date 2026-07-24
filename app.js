@@ -186,6 +186,47 @@ function distanciaKm(a, b) {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
+function ubicarPinCliente(latlng, zoom) {
+  pinClienteActual = { lat: latlng.lat, lng: latlng.lng };
+  if (markerCliente) {
+    markerCliente.setLatLng(latlng);
+  } else {
+    markerCliente = L.marker(latlng).addTo(mapaCliente);
+  }
+  if (zoom) {
+    mapaCliente.setView(latlng, zoom);
+  }
+  renderTotalesModal();
+}
+
+async function buscarDireccionEnMapa() {
+  const direccion = el("direccion-calle").value.trim();
+  const elBuscando = el("direccion-buscando");
+  const elNoEncontrada = el("direccion-no-encontrada");
+  elNoEncontrada.classList.add("oculto");
+  if (!direccion || !mapaCliente) return;
+
+  const centro = tiendaInfo?.ubicacion || MAPA_CENTRO_DEFECTO;
+  elBuscando.classList.remove("oculto");
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&viewbox=${centro.lng - 0.3},${centro.lat + 0.3},${centro.lng + 0.3},${centro.lat - 0.3}&bounded=0&q=${encodeURIComponent(direccion)}`;
+    const res = await fetch(url);
+    const resultados = await res.json();
+    elBuscando.classList.add("oculto");
+    if (!resultados.length) {
+      elNoEncontrada.classList.remove("oculto");
+      return;
+    }
+    const { lat, lon } = resultados[0];
+    ubicarPinCliente({ lat: parseFloat(lat), lng: parseFloat(lon) }, 16);
+  } catch (e) {
+    elBuscando.classList.add("oculto");
+    elNoEncontrada.classList.remove("oculto");
+  }
+}
+
+el("btn-buscar-direccion").addEventListener("click", buscarDireccionEnMapa);
+
 function inicializarMapaCliente() {
   if (mapaCliente) return;
 
@@ -198,13 +239,7 @@ function inicializarMapaCliente() {
   }).addTo(mapaCliente);
 
   mapaCliente.on("click", (ev) => {
-    pinClienteActual = { lat: ev.latlng.lat, lng: ev.latlng.lng };
-    if (markerCliente) {
-      markerCliente.setLatLng(ev.latlng);
-    } else {
-      markerCliente = L.marker(ev.latlng).addTo(mapaCliente);
-    }
-    renderTotalesModal();
+    ubicarPinCliente(ev.latlng);
   });
 }
 
@@ -555,6 +590,8 @@ function abrirModalConfirmarPedido(resumen) {
   el("direccion-piso").value = "";
   el("direccion-telefono").value = "";
   el("direccion-notas").value = "";
+  el("direccion-buscando").classList.add("oculto");
+  el("direccion-no-encontrada").classList.add("oculto");
 
   renderTotalesModal();
 
