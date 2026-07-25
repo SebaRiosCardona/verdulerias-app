@@ -2,7 +2,7 @@
 // internet; si no hay conexión, usa la última copia guardada.
 // Subí este número cada vez que cambies archivos para forzar la actualización
 // en los celulares que ya tienen la app instalada.
-const CACHE_NAME = "verduleria-cache-v1";
+const CACHE_NAME = "verduleria-cache-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

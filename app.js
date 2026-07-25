@@ -84,6 +84,28 @@ const tiendaId = params.get("tienda") || TIENDA_POR_DEFECTO;
 const CLAVE_SESION = `verduleria_sesion_${tiendaId}`;
 
 // ---------------------------------------------------------------
+// Manifest dinámico por tienda
+// ---------------------------------------------------------------
+// manifest.json es un solo archivo estático compartido por todas las
+// verdulerías. Sin este ajuste, el "start_url" que trae siempre es el
+// mismo (sin ?tienda=...), así que el acceso directo del celular termina
+// abriendo siempre la tienda por defecto, sin importar cuál estabas viendo.
+async function ajustarManifestParaTienda() {
+  try {
+    const manifestLinkEl = document.querySelector('link[rel="manifest"]');
+    if (!manifestLinkEl) return;
+    const respuesta = await fetch(manifestLinkEl.href);
+    const manifestBase = await respuesta.json();
+    manifestBase.start_url = `./index.html?tienda=${tiendaId}`;
+    const blob = new Blob([JSON.stringify(manifestBase)], { type: "application/json" });
+    manifestLinkEl.href = URL.createObjectURL(blob);
+  } catch (e) {
+    console.warn("No se pudo ajustar el manifest dinámico:", e);
+  }
+}
+ajustarManifestParaTienda();
+
+// ---------------------------------------------------------------
 // Elementos del DOM
 // ---------------------------------------------------------------
 const el = (id) => document.getElementById(id);
