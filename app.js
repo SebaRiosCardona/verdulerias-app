@@ -321,6 +321,7 @@ let productos = [];       // catálogo completo (todos activos)
 let carrito = {};         // { productoId: kg }
 let cliente = null;       // { clienteId, nombre, apellido }
 let ultimoPedidoId = null;
+let categoriasAbiertas = {}; // { [categoria]: boolean } — recuerda qué secciones cerró el usuario
 
 // ---------------------------------------------------------------
 // Arranque
@@ -465,7 +466,16 @@ function esCategoriaBolson(categoria) {
   return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
 }
 
+const CATEGORIAS_CATALOGO = [
+  { clave: "bolson", titulo: "Bolsones" },
+  { clave: "fruta", titulo: "Frutas" },
+  { clave: "verdura", titulo: "Verduras" },
+  { clave: "condimento", titulo: "Condimentos" },
+  { clave: "almacen", titulo: "Almacén" },
+];
+
 function renderProductos() {
+  const hayBusqueda = !!(inputBuscar.value || "").trim();
   const texto = slugify(inputBuscar.value || "");
   const filtrados = productos.filter((p) => slugify(p.nombre).includes(texto));
 
@@ -474,26 +484,33 @@ function renderProductos() {
     return;
   }
 
-  const grupos = { bolson: [], fruta: [], verdura: [] };
+  const grupos = { bolson: [], fruta: [], verdura: [], almacen: [], condimento: [] };
   filtrados.forEach((p) => {
-    const cat = esCategoriaBolson(p.categoria) ? "bolson" : (p.categoria === "fruta" ? "fruta" : "verdura");
+    const cat = esCategoriaBolson(p.categoria) ? "bolson" :
+      p.categoria === "fruta" ? "fruta" :
+      p.categoria === "almacen" ? "almacen" :
+      p.categoria === "condimento" ? "condimento" : "verdura";
     grupos[cat].push(p);
   });
 
   let html = "";
-  if (grupos.bolson.length) {
-    html += `<div class="categoria-titulo">Bolsones</div>`;
-    html += grupos.bolson.map(renderFilaProducto).join("");
-  }
-  if (grupos.fruta.length) {
-    html += `<div class="categoria-titulo">Frutas</div>`;
-    html += grupos.fruta.map(renderFilaProducto).join("");
-  }
-  if (grupos.verdura.length) {
-    html += `<div class="categoria-titulo">Verduras</div>`;
-    html += grupos.verdura.map(renderFilaProducto).join("");
-  }
+  CATEGORIAS_CATALOGO.forEach(({ clave, titulo }) => {
+    if (!grupos[clave].length) return;
+    const abierto = hayBusqueda || categoriasAbiertas[clave] !== false;
+    html += `
+      <details class="categoria-grupo" data-categoria="${clave}" ${abierto ? "open" : ""}>
+        <summary class="categoria-titulo">${titulo}<span class="categoria-flecha">▾</span></summary>
+        <div class="categoria-productos">${grupos[clave].map(renderFilaProducto).join("")}</div>
+      </details>
+    `;
+  });
   listaProductos.innerHTML = html;
+
+  listaProductos.querySelectorAll(".categoria-grupo").forEach((detalle) => {
+    detalle.addEventListener("toggle", () => {
+      categoriasAbiertas[detalle.dataset.categoria] = detalle.open;
+    });
+  });
 
   // Listeners de +/-
   listaProductos.querySelectorAll("[data-accion]").forEach((btn) => {

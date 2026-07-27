@@ -607,7 +607,7 @@ function renderTabProductos() {
       el("np-unidad").value = "kg";
       el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
       el("np-nombre").value = "";
-      el("np-nombre").placeholder = selectCategoria.value === "fruta" ? "Ej: Banana" : "Ej: Zanahoria";
+      el("np-nombre").placeholder = selectCategoria.value === "fruta" ? "Ej: Banana" : selectCategoria.value === "almacen" ? "Ej: Avena" : selectCategoria.value === "condimento" ? "Ej: Orégano" : "Ej: Zanahoria";
     }
     el("np-unidad").disabled = esBolson;
     el("np-nombre").disabled = esBolson;

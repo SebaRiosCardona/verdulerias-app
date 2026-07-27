@@ -262,13 +262,32 @@ main {
   max-width: 640px;
   margin: 0 auto;
 }
+.categoria-grupo {
+  margin-bottom: 4px;
+}
 .categoria-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--verde-oscuro);
   font-weight: 700;
   margin: 18px 4px 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.categoria-titulo::-webkit-details-marker {
+  display: none;
+}
+.categoria-flecha {
+  font-size: 12px;
+  transition: transform .15s ease;
+}
+.categoria-grupo:not([open]) .categoria-flecha {
+  transform: rotate(-90deg);
 }
 .producto {
   background: #fff;
