@@ -66,6 +66,13 @@ function pasoDe(producto) {
   return unidadDe(producto).paso;
 }
 
+function textoPasoFijo(producto) {
+  const unidad = producto?.unidadVenta || "kg";
+  if (unidad === "100g") return "100g";
+  if (unidad === "unidad") return "1 unidad";
+  return "500g";
+}
+
 function formatoCantidad(producto, cantidad) {
   return unidadDe(producto).formato(cantidad);
 }
@@ -322,6 +329,8 @@ let carrito = {};         // { productoId: kg }
 let cliente = null;       // { clienteId, nombre, apellido }
 let ultimoPedidoId = null;
 let categoriasAbiertas = {}; // { [categoria]: boolean } — recuerda qué secciones cerró el usuario
+let pasosSeleccionados = {}; // { [productoId]: paso } — paso de +/- elegido para productos con selector
+let selectoresPasoAbiertos = {}; // { [productoId]: boolean } — si el selector de paso está desplegado
 
 // ---------------------------------------------------------------
 // Arranque
@@ -474,6 +483,15 @@ const CATEGORIAS_CATALOGO = [
   { clave: "almacen", titulo: "Almacén" },
 ];
 
+document.addEventListener("click", (ev) => {
+  document.querySelectorAll(".detalle-selector-paso[open]").forEach((detalle) => {
+    if (!detalle.contains(ev.target)) {
+      detalle.open = false;
+      selectoresPasoAbiertos[detalle.dataset.id] = false;
+    }
+  });
+});
+
 function renderProductos() {
   const hayBusqueda = !!(inputBuscar.value || "").trim();
   const texto = slugify(inputBuscar.value || "");
@@ -512,34 +530,80 @@ function renderProductos() {
     });
   });
 
+  listaProductos.querySelectorAll(".detalle-selector-paso").forEach((detalle) => {
+    detalle.addEventListener("toggle", () => {
+      selectoresPasoAbiertos[detalle.dataset.id] = detalle.open;
+    });
+  });
+
   // Listeners de +/-
   listaProductos.querySelectorAll("[data-accion]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       const accion = btn.dataset.accion;
       const producto = productos.find((x) => x.id === id);
-      const paso = pasoDe(producto);
+      const paso = pasosSeleccionados[id] || pasoDe(producto);
       const actual = carrito[id] || 0;
       let nuevo = accion === "sumar" ? actual + paso : actual - paso;
       if (nuevo < 0) nuevo = 0;
-      nuevo = Math.round(nuevo * 10) / 10;
+      nuevo = Math.round(nuevo * 100) / 100;
       if (nuevo === 0) delete carrito[id];
       else carrito[id] = nuevo;
       renderProductos();
       actualizarBarraCarrito();
     });
   });
+
+  // Listeners del selector de paso (100g / 500g / 1kg)
+  listaProductos.querySelectorAll("[data-accion-paso]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const nuevoPaso = parseFloat(btn.dataset.pasoValor);
+      if (pasosSeleccionados[id] !== nuevoPaso) {
+        delete carrito[id];
+      }
+      pasosSeleccionados[id] = nuevoPaso;
+      renderProductos();
+      actualizarBarraCarrito();
+    });
+  });
 }
+
+const OPCIONES_PASO_KILO = [
+  { valor: 0.1, etiqueta: "100g" },
+  { valor: 0.5, etiqueta: "500g" },
+  { valor: 1, etiqueta: "1kg" },
+];
 
 function renderFilaProducto(p) {
   const cantidad = carrito[p.id] || 0;
   const tieneContenido = esCategoriaBolson(p.categoria) && p.contenido;
+  const tieneSelectorPaso = !!p.selectorCantidad;
+  const opcionesPaso = tieneSelectorPaso ? OPCIONES_PASO_KILO : null;
+  if (tieneSelectorPaso && pasosSeleccionados[p.id] === undefined) {
+    pasosSeleccionados[p.id] = OPCIONES_PASO_KILO[0].valor;
+  }
+
+  const opcionActual = opcionesPaso?.find((op) => op.valor === pasosSeleccionados[p.id]);
+
+  const selectorPaso = opcionesPaso ? `
+    <details class="detalle-selector-paso" data-id="${p.id}" ${selectoresPasoAbiertos[p.id] ? "open" : ""}>
+      <summary>elegir cantidad <span class="paso-elegido-actual">(${opcionActual.etiqueta})</span></summary>
+      <div class="selector-paso">
+        ${opcionesPaso.map((op) => `
+          <button type="button" class="paso-opcion ${pasosSeleccionados[p.id] === op.valor ? "activo" : ""}" data-id="${p.id}" data-accion-paso data-paso-valor="${op.valor}">${op.etiqueta}</button>
+        `).join("")}
+      </div>
+    </details>
+  ` : `<div class="texto-paso-fijo">Suma de a ${textoPasoFijo(p)}</div>`;
+
   return `
     <div class="producto">
       <div class="producto-fila">
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
           <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
+          ${selectorPaso}
         </div>
         <div class="producto-cantidad">
           <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>

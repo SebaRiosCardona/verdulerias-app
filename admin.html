@@ -159,6 +159,7 @@
         <label>¿Qué lleva el bolsón?</label>
         <div id="np-contenido-filas"></div>
         <button type="button" id="btn-agregar-item-bolson" class="btn-agregar-item-bolson">+ Agregar item</button>
+        <p id="np-valor-sugerido" class="oculto"></p>
       </div>
       <label>Se vende por</label>
       <select id="np-unidad">
@@ -171,6 +172,10 @@
       <div class="campo-precio">
         <input id="np-precio" type="text" inputmode="numeric" placeholder="Ej: 1200" />
       </div>
+      <label id="np-selector-cantidad-wrap" class="campo-checkbox oculto">
+        <input id="np-selector-cantidad" type="checkbox" />
+        Permitir elegir cantidad exacta (100g / 500g / 1kg)
+      </label>
       <button type="button" id="btn-eliminar-producto-modal" class="btn-eliminar-producto-modal oculto">Eliminar producto</button>
       <div class="modal-producto-acciones">
         <button type="button" id="modal-producto-cancelar" class="btn-modal-cancelar">Cancelar</button>
