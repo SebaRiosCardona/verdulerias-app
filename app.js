@@ -595,6 +595,7 @@ function renderFilaProducto(p) {
         `).join("")}
       </div>
     </details>
+    <div class="texto-paso-fijo">Suma de a ${opcionActual.etiqueta}</div>
   ` : `<div class="texto-paso-fijo">Suma de a ${textoPasoFijo(p)}</div>`;
 
   return `
