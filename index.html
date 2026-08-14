@@ -143,7 +143,7 @@
         <label>Utilizaremos esta ubicación para enviarte el pedido, ¡asegurate de marcarla bien!</label>
         <div id="mapa-direccion-cliente" class="mapa-contenedor"></div>
         <p id="direccion-sin-ubicacion-local" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:8px 0 0;">Este local todavía no tiene envío a domicilio configurado.</p>
-        <label>Dirección</label>
+        <label>Dirección <span class="campo-obligatorio">*</span></label>
         <div class="campo-direccion-con-boton">
           <input id="direccion-calle" type="text" placeholder="Calle y número" />
           <button type="button" id="btn-buscar-direccion">Buscar en el mapa</button>
@@ -152,7 +152,7 @@
         <p id="direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
         <label>Piso / depto (opcional)</label>
         <input id="direccion-piso" type="text" />
-        <label>Teléfono de contacto</label>
+        <label>Teléfono de contacto <span class="campo-obligatorio">*</span></label>
         <input id="direccion-telefono" type="tel" />
         <label>Notas para el repartidor (opcional)</label>
         <input id="direccion-notas" type="text" placeholder="Ej: timbre no funciona, dejar en portería" />

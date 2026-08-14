@@ -17,6 +17,23 @@ const CLAVE_SESION_ADMIN = `verduleria_admin_${tiendaId}`;
 
 const el = (id) => document.getElementById(id);
 
+let toastTimeoutId = null;
+function mostrarToast(mensaje) {
+  let toast = document.getElementById("toast-admin");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast-admin";
+    toast.className = "toast-admin";
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span class="toast-admin-check">✓</span> ${mensaje}`;
+  toast.classList.add("visible");
+  clearTimeout(toastTimeoutId);
+  toastTimeoutId = setTimeout(() => {
+    toast.classList.remove("visible");
+  }, 2500);
+}
+
 const MOMENTOS_TEXTO = { manana: "Mañana", tarde: "Tarde", noche: "Noche" };
 
 const RANGO_DIACRITICOS = new RegExp("[̀-ͯ]", "g");
@@ -438,7 +455,7 @@ function renderTabConfiguracion() {
     await updateDoc(doc(db, "verdulerias", tiendaId), { telefonoContacto, alias });
     tiendaInfo.telefonoContacto = telefonoContacto;
     tiendaInfo.alias = alias;
-    alert("Datos guardados.");
+    mostrarToast("Datos guardados.");
   };
 
   inicializarMapaLocal();
@@ -465,7 +482,7 @@ function renderTabConfiguracion() {
     tiendaInfo.ubicacion = ubicacionLocalSeleccionada;
     tiendaInfo.envioBase = envioBase;
     tiendaInfo.envioPorKm = envioPorKm;
-    alert("Datos de envío guardados.");
+    mostrarToast("Datos de envío guardados.");
   };
 
   const inputDescuentoMonto = el("cfg-descuento-monto");
@@ -481,7 +498,7 @@ function renderTabConfiguracion() {
     await updateDoc(doc(db, "verdulerias", tiendaId), { montoMinimoDescuento, porcentajeDescuento });
     tiendaInfo.montoMinimoDescuento = montoMinimoDescuento;
     tiendaInfo.porcentajeDescuento = porcentajeDescuento;
-    alert("Descuento guardado.");
+    mostrarToast("Descuento guardado.");
   };
 
   const inputPasswordActual = el("cfg-password-actual");
@@ -517,7 +534,7 @@ function renderTabConfiguracion() {
     inputPasswordActual.value = "";
     inputPasswordNueva.value = "";
     inputPasswordNuevaConfirmar.value = "";
-    alert("Contraseña actualizada con éxito.");
+    mostrarToast("Contraseña actualizada con éxito.");
   };
 }
 
@@ -959,6 +976,7 @@ function renderListaProductosAdmin() {
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { precioPorKg: nuevoPrecio });
       producto.precioPorKg = nuevoPrecio;
       renderListaProductosAdmin();
+      mostrarToast("Precio actualizado.");
     });
 
     row.querySelector('[data-campo="activo"]').addEventListener("change", async (ev) => {
@@ -967,6 +985,7 @@ function renderListaProductosAdmin() {
       producto.activo = activo;
       await actualizarActivoProductoUnidadVinculado(producto, activo);
       renderListaProductosAdmin();
+      mostrarToast(activo ? "Producto activado." : "Producto desactivado.");
     });
 
     row.querySelector('[data-accion="editar"]').addEventListener("click", () => {

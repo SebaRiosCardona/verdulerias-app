@@ -124,8 +124,8 @@ header .subtitulo {
   font-size: 42px;
 }
 .login-top .logo img {
-  max-width: 160px;
-  max-height: 120px;
+  max-width: 280px;
+  max-height: 220px;
   width: auto;
   height: auto;
 }
@@ -137,6 +137,9 @@ header .subtitulo {
   margin: 0;
   opacity: .9;
   font-size: 14px;
+}
+#slogan-tienda.slogan-destacado {
+  font-weight: 700;
 }
 .login-bottom {
   flex: 1;
@@ -192,6 +195,9 @@ header .subtitulo {
   font-weight: 600;
   margin: 14px 0 6px;
   color: var(--gris);
+}
+.campo-obligatorio {
+  color: var(--rojo);
 }
 .card-login input {
   width: 100%;
@@ -901,3 +907,33 @@ input:checked + .slider:before { transform:translateX(20px); }
 .detalle-config summary::after { content:"▾"; float:right; color:var(--gris); }
 .detalle-config[open] summary::after { content:"▴"; }
 .detalle-config-contenido { margin-top:10px; }
+.toast-admin {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 16px);
+  background: #1f2d22;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+  z-index: 999;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast-admin.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.toast-admin-check {
+  color: #6fd68a;
+  font-weight: 900;
+}

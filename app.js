@@ -152,7 +152,7 @@ const LOGOS_POR_TIENDA = {
 };
 
 const SLOGANS_POR_TIENDA = {
-  "vida-verde": "Fresco, natural, Vida Verde",
+  "vida-verde": "Productos frescos y de calidad",
 };
 
 if (LOGOS_POR_TIENDA[tiendaId]) {
@@ -160,12 +160,17 @@ if (LOGOS_POR_TIENDA[tiendaId]) {
   if (elLogo) {
     elLogo.innerHTML = `<img src="${LOGOS_POR_TIENDA[tiendaId]}" alt="Logo" />`;
   }
+  const elNombre = document.getElementById("nombre-tienda");
+  if (elNombre) {
+    elNombre.classList.add("oculto");
+  }
 }
 
 if (SLOGANS_POR_TIENDA[tiendaId]) {
   const elSlogan = document.getElementById("slogan-tienda");
   if (elSlogan) {
     elSlogan.textContent = SLOGANS_POR_TIENDA[tiendaId];
+    elSlogan.classList.add("slogan-destacado");
   }
 }
 
