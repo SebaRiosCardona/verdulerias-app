@@ -98,30 +98,45 @@
 
       <!-- Tab Configuración -->
       <section id="tab-configuracion" class="oculto">
-        <div class="form-nuevo-producto">
-          <h3 style="margin:0;">Datos de la tienda</h3>
-          <label>Teléfono de contacto (WhatsApp)</label>
-          <input id="cfg-telefono" type="tel" placeholder="Ej: 1122334455" />
-          <button id="btn-guardar-telefono">Guardar teléfono</button>
-        </div>
-        <div class="form-nuevo-producto">
-          <h3 style="margin:0;">Envío a domicilio</h3>
-          <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Marcá la ubicación de tu local. El costo de envío se calcula según la distancia hasta la casa del cliente.</p>
-          <label>Dirección de tu local</label>
-          <div class="campo-direccion-con-boton">
-            <input id="local-direccion" type="text" placeholder="Calle y número" />
-            <button type="button" id="btn-buscar-direccion-local">Buscar en el mapa</button>
+        <details class="form-nuevo-producto detalle-config" open>
+          <summary>Datos de la tienda</summary>
+          <div class="detalle-config-contenido">
+            <label>Teléfono de contacto (WhatsApp)</label>
+            <input id="cfg-telefono" type="tel" placeholder="Ej: 1122334455" />
+            <button id="btn-guardar-telefono">Guardar teléfono</button>
           </div>
-          <p id="local-direccion-buscando" class="oculto" style="font-size:12.5px;color:var(--gris);margin:4px 0 0;">Buscando...</p>
-          <p id="local-direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
-          <div id="mapa-local" class="mapa-contenedor"></div>
-          <p id="mapa-local-hint" style="font-size:12px;color:var(--gris);margin:8px 0 0;">Tocá el mapa para marcar tu local.</p>
-          <label>Costo base</label>
-          <div class="campo-precio"><input id="cfg-envio-base" type="text" inputmode="numeric" placeholder="Ej: 800" /></div>
-          <label>Costo por km</label>
-          <div class="campo-precio"><input id="cfg-envio-por-km" type="text" inputmode="numeric" placeholder="Ej: 200" /></div>
-          <button id="btn-guardar-envio">Guardar envío</button>
-        </div>
+        </details>
+        <details id="detalle-envio-domicilio" class="form-nuevo-producto detalle-config" open>
+          <summary>Envío a domicilio</summary>
+          <div class="detalle-config-contenido">
+            <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Marcá la ubicación de tu local. El costo de envío se calcula según la distancia hasta la casa del cliente.</p>
+            <label>Dirección de tu local</label>
+            <div class="campo-direccion-con-boton">
+              <input id="local-direccion" type="text" placeholder="Calle y número" />
+              <button type="button" id="btn-buscar-direccion-local">Buscar en el mapa</button>
+            </div>
+            <p id="local-direccion-buscando" class="oculto" style="font-size:12.5px;color:var(--gris);margin:4px 0 0;">Buscando...</p>
+            <p id="local-direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
+            <div id="mapa-local" class="mapa-contenedor"></div>
+            <p id="mapa-local-hint" style="font-size:12px;color:var(--gris);margin:8px 0 0;">Tocá el mapa para marcar tu local.</p>
+            <label>Costo base</label>
+            <div class="campo-precio"><input id="cfg-envio-base" type="text" inputmode="numeric" placeholder="Ej: 800" /></div>
+            <label>Costo por km</label>
+            <div class="campo-precio"><input id="cfg-envio-por-km" type="text" inputmode="numeric" placeholder="Ej: 200" /></div>
+            <button id="btn-guardar-envio">Guardar envío</button>
+          </div>
+        </details>
+        <details class="form-nuevo-producto detalle-config" open>
+          <summary>Descuento por monto mínimo</summary>
+          <div class="detalle-config-contenido">
+            <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Definí a partir de qué monto de compra se aplica un descuento automático.</p>
+            <label>Monto mínimo de compra</label>
+            <div class="campo-precio"><input id="cfg-descuento-monto" type="text" inputmode="numeric" placeholder="Ej: 20000" /></div>
+            <label>Porcentaje de descuento</label>
+            <input id="cfg-descuento-porcentaje" type="text" inputmode="numeric" placeholder="Ej: 10" />
+            <button id="btn-guardar-descuento">Guardar descuento</button>
+          </div>
+        </details>
         <details class="detalle-cambiar-password">
           <summary>Cambiar contraseña</summary>
           <div class="detalle-cambiar-password-contenido">
@@ -145,13 +160,10 @@
       <h3 id="modal-producto-titulo">Nuevo producto</h3>
       <label>Categoría</label>
       <select id="np-categoria">
-        <option value="verdura">Verdura</option>
-        <option value="fruta">Fruta</option>
+        <option value="verduleria">Verdulería</option>
         <option value="almacen">Almacén</option>
         <option value="condimento">Condimentos</option>
-        <option value="bolson_verduras">Bolsón Verduras</option>
-        <option value="bolson_frutas">Bolsón Frutas</option>
-        <option value="bolson_mixto">Bolsón Mixto</option>
+        <option value="bolson">Bolsón</option>
       </select>
       <label>Nombre</label>
       <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
@@ -169,14 +181,19 @@
         <option value="100g">100 gramos</option>
         <option value="unidad">Unidad</option>
         <option value="atado">Atado</option>
+        <option value="bolsa">Bolsa</option>
       </select>
       <label id="np-precio-label">Precio por kg</label>
       <div class="campo-precio">
         <input id="np-precio" type="text" inputmode="numeric" placeholder="Ej: 1200" />
       </div>
-      <label id="np-selector-cantidad-wrap" class="campo-checkbox oculto">
-        <input id="np-selector-cantidad" type="checkbox" />
-        Permitir elegir cantidad exacta (100g / 500g / 1kg)
+      <div id="np-peso-aproximado-wrap" class="oculto">
+        <label>Peso aproximado (opcional)</label>
+        <input id="np-peso-aproximado" type="text" inputmode="numeric" placeholder="Ej: 125 (en gramos)" />
+      </div>
+      <label id="np-atado-fraccionable-wrap" class="campo-checkbox oculto">
+        <input id="np-atado-fraccionable" type="checkbox" />
+        Se puede fraccionar (1/4, 1/2)
       </label>
       <button type="button" id="btn-eliminar-producto-modal" class="btn-eliminar-producto-modal oculto">Eliminar producto</button>
       <div class="modal-producto-acciones">

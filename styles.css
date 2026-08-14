@@ -846,3 +846,8 @@ input:checked + .slider:before { transform:translateX(20px); }
 .detalle-cambiar-password-contenido label { display:block; font-size:12px; font-weight:600; color:var(--gris); margin:8px 0 4px; }
 .detalle-cambiar-password-contenido input { width:100%; padding:10px; border-radius:8px; border:1px solid var(--gris-claro); }
 .detalle-cambiar-password-contenido button { margin-top:12px; width:100%; padding:11px; background:var(--verde); color:#fff; border:none; border-radius:8px; font-weight:700; }
+.detalle-config summary { cursor:pointer; font-weight:700; font-size:16px; color:var(--texto); list-style:none; }
+.detalle-config summary::-webkit-details-marker { display:none; }
+.detalle-config summary::after { content:"▾"; float:right; color:var(--gris); }
+.detalle-config[open] summary::after { content:"▴"; }
+.detalle-config-contenido { margin-top:10px; }

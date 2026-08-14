@@ -9,10 +9,18 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ---------------------------------------------------------------
-// Reglas de negocio del bolsón
+// Reglas de negocio del descuento
 // ---------------------------------------------------------------
-const KG_MINIMO_DESCUENTO = 5;
-const PORCENTAJE_DESCUENTO = 0.10;
+const MONTO_MINIMO_DESCUENTO_DEFECTO = 20000;
+const PORCENTAJE_DESCUENTO_DEFECTO = 0.10;
+
+function montoMinimoDescuento() {
+  return tiendaInfo?.montoMinimoDescuento || MONTO_MINIMO_DESCUENTO_DEFECTO;
+}
+
+function porcentajeDescuento() {
+  return tiendaInfo?.porcentajeDescuento !== undefined ? tiendaInfo.porcentajeDescuento : PORCENTAJE_DESCUENTO_DEFECTO;
+}
 
 // ---------------------------------------------------------------
 // Setup Firebase
@@ -41,7 +49,9 @@ function formatoMoneda(valor) {
 }
 
 function formatoKg(valor) {
-  return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
+  const redondeado = Math.round(valor * 100) / 100;
+  const decimales = redondeado * 10 % 1 === 0 ? 1 : 2;
+  return redondeado.toFixed(decimales) + " kg";
 }
 
 // ---------------------------------------------------------------
@@ -51,24 +61,64 @@ function formatoGramos(kg) {
   return `${Math.round(kg * 1000)}g`;
 }
 
+function textoPesoAproximado(gramos) {
+  if (gramos >= 1000) {
+    const kg = Math.round(gramos / 10) / 100;
+    return `${kg}kg`;
+  }
+  return `${gramos}g`;
+}
+
+function formatoFraccionable(c, etiquetaUnidad) {
+  if (c === 0.25) return `1/4 ${etiquetaUnidad}`;
+  if (c === 0.5) return `1/2 ${etiquetaUnidad}`;
+  if (c === 0.75) return `3/4 ${etiquetaUnidad}`;
+  const entero = Math.round(c);
+  return `${entero} ${etiquetaUnidad}${entero === 1 ? "" : "s"}`;
+}
+
 const UNIDADES_VENTA = {
   kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   medio_kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   "100g": { paso: 0.1, formato: (c) => c < 1 ? formatoGramos(c) : formatoKg(c), kgPorUnidad: 1 },
   unidad: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
-  atado: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
+  atado: { paso: 1, formato: (c) => `${Math.round(c)} atado${Math.round(c) === 1 ? "" : "s"}`, kgPorUnidad: 0.5 },
+  bolsa: { paso: 1, formato: (c) => `${Math.round(c)} bolsa${Math.round(c) === 1 ? "" : "s"}`, kgPorUnidad: 0.5 },
 };
 
 function unidadDe(producto) {
   return UNIDADES_VENTA[producto?.unidadVenta || "kg"];
 }
 
+// precioPorKg siempre se guarda como $/kg; para mostrarlo en la unidad que
+// eligió el admin (medio kilo, 100g) hay que convertirlo de vuelta.
+function factorConversionPrecio(unidadVenta) {
+  if (unidadVenta === "medio_kg") return 2;
+  if (unidadVenta === "100g") return 10;
+  return 1;
+}
+
+function sufijoPrecioDe(unidadVenta) {
+  if (unidadVenta === "unidad") return "/ unidad";
+  if (unidadVenta === "atado") return "/ atado";
+  if (unidadVenta === "bolsa") return "/ bolsa";
+  if (unidadVenta === "medio_kg") return "/ medio kilo";
+  if (unidadVenta === "100g") return "/ 100g";
+  return "/ kg";
+}
+
+function esFraccionable(producto) {
+  const unidad = producto?.unidadVenta;
+  return (unidad === "atado" || unidad === "unidad") && !!producto?.atadoFraccionable;
+}
+
 function pasoDe(producto) {
+  if (esFraccionable(producto)) return 0.25;
   return unidadDe(producto).paso;
 }
 
 function esUnidadEntera(unidadVenta) {
-  return unidadVenta === "unidad" || unidadVenta === "atado";
+  return unidadVenta === "unidad" || unidadVenta === "atado" || unidadVenta === "bolsa";
 }
 
 function textoPasoFijo(producto) {
@@ -79,6 +129,7 @@ function textoPasoFijo(producto) {
 }
 
 function formatoCantidad(producto, cantidad) {
+  if (esFraccionable(producto)) return formatoFraccionable(cantidad, producto.unidadVenta === "atado" ? "atado" : "unidad");
   return unidadDe(producto).formato(cantidad);
 }
 
@@ -308,7 +359,7 @@ function renderTotalesModal() {
   const total = resumenActual.total + costoEnvio;
   const html = `
     <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(resumenActual.subtotal)}</span></div>
-    ${resumenActual.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (10%)</span><span>-${formatoMoneda(resumenActual.descuentoMonto)}</span></div>` : ""}
+    ${resumenActual.cumpleMinimo ? `<div class="fila-total ahorro"><span>Ahorrás (${Math.round(porcentajeDescuento() * 100)}%)</span><span>-${formatoMoneda(resumenActual.descuentoMonto)}</span></div>` : ""}
     ${costoEnvio > 0 ? `<div class="fila-total"><span>Envío</span><span>${formatoMoneda(costoEnvio)}</span></div>` : ""}
     <div class="fila-total a-pagar"><span>Total</span><span>${formatoMoneda(total)}</span></div>
   `;
@@ -478,13 +529,12 @@ btnVolverCatalogo.addEventListener("click", () => mostrarCatalogo());
 inputBuscar.addEventListener("input", () => renderProductos());
 
 function esCategoriaBolson(categoria) {
-  return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
+  return categoria === "bolson";
 }
 
 const CATEGORIAS_CATALOGO = [
   { clave: "bolson", titulo: "Bolsones" },
-  { clave: "fruta", titulo: "Frutas" },
-  { clave: "verdura", titulo: "Verduras" },
+  { clave: "verduleria", titulo: "Verdulería" },
   { clave: "condimento", titulo: "Condimentos" },
   { clave: "almacen", titulo: "Almacén" },
 ];
@@ -508,12 +558,11 @@ function renderProductos() {
     return;
   }
 
-  const grupos = { bolson: [], fruta: [], verdura: [], almacen: [], condimento: [] };
+  const grupos = { bolson: [], verduleria: [], almacen: [], condimento: [] };
   filtrados.forEach((p) => {
     const cat = esCategoriaBolson(p.categoria) ? "bolson" :
-      p.categoria === "fruta" ? "fruta" :
       p.categoria === "almacen" ? "almacen" :
-      p.categoria === "condimento" ? "condimento" : "verdura";
+      p.categoria === "condimento" ? "condimento" : "verduleria";
     grupos[cat].push(p);
   });
 
@@ -577,17 +626,28 @@ function renderProductos() {
 
 const OPCIONES_PASO_KILO = [
   { valor: 0.1, etiqueta: "100g" },
+  { valor: 0.25, etiqueta: "250g" },
   { valor: 0.5, etiqueta: "500g" },
   { valor: 1, etiqueta: "1kg" },
 ];
 
+function opcionesPasoFraccionable(etiquetaUnidad) {
+  return [
+    { valor: 0.25, etiqueta: `1/4 ${etiquetaUnidad}` },
+    { valor: 0.5, etiqueta: `1/2 ${etiquetaUnidad}` },
+    { valor: 1, etiqueta: etiquetaUnidad === "atado" ? "Atado" : "1 unidad" },
+  ];
+}
+
 function renderFilaProducto(p) {
   const cantidad = carrito[p.id] || 0;
   const tieneContenido = esCategoriaBolson(p.categoria) && p.contenido;
-  const tieneSelectorPaso = !!p.selectorCantidad;
-  const opcionesPaso = tieneSelectorPaso ? OPCIONES_PASO_KILO : null;
+  const unidadVenta = p.unidadVenta || "kg";
+  const fraccionable = esFraccionable(p);
+  const tieneSelectorPaso = !esCategoriaBolson(p.categoria) && (fraccionable || !esUnidadEntera(unidadVenta));
+  const opcionesPaso = tieneSelectorPaso ? (fraccionable ? opcionesPasoFraccionable(unidadVenta === "atado" ? "atado" : "unidad") : OPCIONES_PASO_KILO) : null;
   if (tieneSelectorPaso && pasosSeleccionados[p.id] === undefined) {
-    pasosSeleccionados[p.id] = OPCIONES_PASO_KILO[0].valor;
+    pasosSeleccionados[p.id] = opcionesPaso[0].valor;
   }
 
   const opcionActual = opcionesPaso?.find((op) => op.valor === pasosSeleccionados[p.id]);
@@ -609,7 +669,7 @@ function renderFilaProducto(p) {
       <div class="producto-fila">
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
-          <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : p.unidadVenta === "atado" ? "/ atado" : "/ kg"}</div>
+          <div class="producto-precio">${formatoMoneda(p.precioPorKg / factorConversionPrecio(unidadVenta))} ${sufijoPrecioDe(unidadVenta)}${p.pesoAproximadoGramos ? ` (aprox. ${textoPesoAproximado(p.pesoAproximadoGramos)})` : ""}</div>
           ${selectorPaso}
         </div>
         <div class="producto-cantidad">
@@ -635,7 +695,7 @@ function calcularCarrito() {
     return {
       productoId,
       nombre: p?.nombre || "?",
-      categoria: p?.categoria || "verdura",
+      categoria: p?.categoria || "verduleria",
       precioPorKg: p?.precioPorKg || 0,
       unidadVenta: p?.unidadVenta || "kg",
       kg: cantidad,
@@ -645,22 +705,23 @@ function calcularCarrito() {
   });
   const pesoTotalKg = items.reduce((acc, it) => acc + it.kgEquivalente, 0);
   const subtotal = items.reduce((acc, it) => acc + it.subtotal, 0);
-  const cumpleMinimo = pesoTotalKg >= KG_MINIMO_DESCUENTO;
-  const descuentoMonto = cumpleMinimo ? subtotal * PORCENTAJE_DESCUENTO : 0;
+  const cumpleMinimo = subtotal >= montoMinimoDescuento();
+  const descuentoMonto = cumpleMinimo ? subtotal * porcentajeDescuento() : 0;
   const total = subtotal - descuentoMonto;
   return { items, pesoTotalKg, subtotal, cumpleMinimo, descuentoMonto, total };
 }
 
 function actualizarBarraCarrito() {
-  const { items, pesoTotalKg, total, cumpleMinimo } = calcularCarrito();
+  const { items, subtotal, total, cumpleMinimo, pesoTotalKg } = calcularCarrito();
 
+  const porcentajeTexto = Math.round(porcentajeDescuento() * 100);
   if (cumpleMinimo) {
     barraDescuento.className = "barra-descuento lograda";
-    barraDescuento.textContent = `¡10% de descuento aplicado por superar los ${KG_MINIMO_DESCUENTO} kg! 🎉`;
+    barraDescuento.textContent = `¡${porcentajeTexto}% de descuento aplicado por superar los ${formatoMoneda(montoMinimoDescuento())}! 🎉`;
   } else {
-    const faltan = KG_MINIMO_DESCUENTO - pesoTotalKg;
+    const faltan = montoMinimoDescuento() - subtotal;
     barraDescuento.className = "barra-descuento falta";
-    barraDescuento.textContent = `Te faltan ${formatoKg(faltan)} para el 10% de descuento`;
+    barraDescuento.textContent = `Te faltan ${formatoMoneda(faltan)} para el ${porcentajeTexto}% de descuento`;
   }
 
   barraKg.textContent = formatoKg(pesoTotalKg);
@@ -790,6 +851,7 @@ async function enviarPedido(resumen) {
       subtotal: resumen.subtotal,
       descuentoAplicado: resumen.cumpleMinimo,
       descuentoMonto: resumen.descuentoMonto,
+      porcentajeDescuentoAplicado: resumen.cumpleMinimo ? porcentajeDescuento() : null,
       tipoEntrega: tipoEntregaSeleccionado,
       momentoRetiro: esEnvio ? null : momentoSeleccionado,
       ubicacionEntrega,
@@ -920,7 +982,7 @@ function renderPedido(p) {
       <div class="pedido-items">${itemsHtml}</div>
       <div class="pedido-totales">
         <div class="fila-total"><span>Subtotal</span><span>${formatoMoneda(p.subtotal)}</span></div>
-        ${p.descuentoAplicado ? `<div class="fila-total ahorro"><span>Ahorraste (10%)</span><span>-${formatoMoneda(p.descuentoMonto)}</span></div>` : ""}
+        ${p.descuentoAplicado ? `<div class="fila-total ahorro"><span>Ahorraste (${Math.round((p.porcentajeDescuentoAplicado ?? 0.10) * 100)}%)</span><span>-${formatoMoneda(p.descuentoMonto)}</span></div>` : ""}
         ${p.costoEnvio ? `<div class="fila-total"><span>Envío</span><span>${formatoMoneda(p.costoEnvio)}</span></div>` : ""}
         <div class="fila-total a-pagar"><span>Total a pagar</span><span>${formatoMoneda(p.total)}</span></div>
       </div>

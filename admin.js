@@ -31,6 +31,13 @@ function slugify(texto) {
     .replace(/(^-|-$)/g, "");
 }
 
+function capitalizarPalabras(texto) {
+  return texto
+    .split(" ")
+    .map((palabra) => palabra ? palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase() : palabra)
+    .join(" ");
+}
+
 function formatoMoneda(valor) {
   return "$" + Math.round(valor).toLocaleString("es-AR");
 }
@@ -63,12 +70,26 @@ function formatoKg(valor) {
   return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
 }
 function esUnidadEntera(unidadVenta) {
-  return unidadVenta === "unidad" || unidadVenta === "atado";
+  return unidadVenta === "unidad" || unidadVenta === "atado" || unidadVenta === "bolsa";
+}
+
+function aplicaSelectorPasoExacto(unidadVenta) {
+  return unidadVenta !== "unidad";
 }
 
 function formatoCantidad(item) {
-  if (esUnidadEntera(item.unidadVenta || "kg")) return `${Math.round(item.kg)} u.`;
+  const unidad = item.unidadVenta || "kg";
+  if (unidad === "atado") return formatoAtadoAdmin(item.kg);
+  if (esUnidadEntera(unidad)) return `${Math.round(item.kg)} u.`;
   return formatoKg(item.kg);
+}
+
+function formatoAtadoAdmin(c) {
+  if (c === 0.25) return "1/4 atado";
+  if (c === 0.5) return "1/2 atado";
+  if (c === 0.75) return "3/4 atado";
+  const entero = Math.round(c);
+  return `${entero} atado${entero === 1 ? "" : "s"}`;
 }
 
 const pantallaCarga = el("pantalla-carga");
@@ -186,6 +207,12 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
   });
 });
 
+el("detalle-envio-domicilio")?.addEventListener("toggle", (ev) => {
+  if (ev.target.open && mapaLocal) {
+    setTimeout(() => mapaLocal.invalidateSize(), 0);
+  }
+});
+
 // ---------------------------------------------------------------
 // Carga de datos
 // ---------------------------------------------------------------
@@ -275,7 +302,7 @@ function renderListaPedidosEn(contenedorId, lista, onCambio, nombreTab) {
           <span style="font-size:12px;color:var(--gris);">${fechaTexto}</span>
         </div>
         <ul class="lista-items-pedido">${itemsHtml}</ul>
-        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? "10% desc. aplicado" : "sin descuento"}</div>
+        <div style="font-size:13px;">${formatoKg(p.pesoTotalKg)} · ${p.descuentoAplicado ? `${Math.round((p.porcentajeDescuentoAplicado ?? 0.10) * 100)}% desc. aplicado` : "sin descuento"}</div>
         ${entregaHtml}
         <div style="font-weight:700;margin-top:4px;">Total: ${formatoMoneda(p.total)}</div>
         <div class="fila-acciones">
@@ -437,6 +464,22 @@ function renderTabConfiguracion() {
     alert("Datos de envío guardados.");
   };
 
+  const inputDescuentoMonto = el("cfg-descuento-monto");
+  const inputDescuentoPorcentaje = el("cfg-descuento-porcentaje");
+  inputDescuentoMonto.value = tiendaInfo.montoMinimoDescuento ? formatoMiles(tiendaInfo.montoMinimoDescuento) : formatoMiles(20000);
+  inputDescuentoPorcentaje.value = tiendaInfo.porcentajeDescuento !== undefined ? Math.round(tiendaInfo.porcentajeDescuento * 100) : 10;
+  activarFormatoMiles(inputDescuentoMonto);
+
+  el("btn-guardar-descuento").onclick = async () => {
+    const montoMinimoDescuento = parsearMiles(inputDescuentoMonto.value) || 0;
+    const porcentajeIngresado = parseFloat(inputDescuentoPorcentaje.value) || 0;
+    const porcentajeDescuento = porcentajeIngresado / 100;
+    await updateDoc(doc(db, "verdulerias", tiendaId), { montoMinimoDescuento, porcentajeDescuento });
+    tiendaInfo.montoMinimoDescuento = montoMinimoDescuento;
+    tiendaInfo.porcentajeDescuento = porcentajeDescuento;
+    alert("Descuento guardado.");
+  };
+
   const inputPasswordActual = el("cfg-password-actual");
   const inputPasswordNueva = el("cfg-password-nueva");
   const inputPasswordNuevaConfirmar = el("cfg-password-nueva-confirmar");
@@ -487,13 +530,8 @@ const UNIDADES_VENTA = {
   "100g": { etiqueta: "100 gramos", etiquetaCorta: "100g", precioLabel: "Precio por 100g", sufijoPrecio: "/ kg", paso: 0.1 },
   unidad: { etiqueta: "Unidad", etiquetaCorta: "u", precioLabel: "Precio por unidad", sufijoPrecio: "/ unidad", paso: 1 },
   atado: { etiqueta: "Atado", etiquetaCorta: "atado", precioLabel: "Precio por atado", sufijoPrecio: "/ atado", paso: 1 },
+  bolsa: { etiqueta: "Bolsa", etiquetaCorta: "bolsa", precioLabel: "Precio por bolsa", sufijoPrecio: "/ bolsa", paso: 1 },
 };
-
-function textoPasoIncremento(unidadVenta) {
-  if (unidadVenta === "100g") return "100g";
-  if (esUnidadEntera(unidadVenta)) return "1 unidad";
-  return "500g";
-}
 
 // precioPorKg siempre se guarda como $/kg; el admin carga/ve el precio en la
 // unidad elegida (ej. precio por medio kilo o por 100g), así que hay que
@@ -505,21 +543,7 @@ function factorConversionPrecio(unidadVenta) {
 }
 
 function esCategoriaBolson(categoria) {
-  return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
-}
-
-const NOMBRE_BASE_BOLSON = {
-  bolson_frutas: "Bolsón Frutero",
-  bolson_verduras: "Bolsón Verdulero",
-  bolson_mixto: "Bolsón Mixto",
-};
-
-function nombreBolsonDisponible(nombreBase) {
-  const nombresExistentes = new Set(productosCache.map((p) => p.nombre));
-  if (!nombresExistentes.has(nombreBase)) return nombreBase;
-  let n = 2;
-  while (nombresExistentes.has(`${nombreBase} ${n}`)) n++;
-  return `${nombreBase} ${n}`;
+  return categoria === "bolson";
 }
 
 function formatoCantidadItem(producto, cantidad) {
@@ -534,9 +558,6 @@ function formatoCantidadItem(producto, cantidad) {
 let filasContenidoBolson = [];
 
 function productosDisponiblesParaBolson() {
-  const categoriaBolson = el("np-categoria").value;
-  if (categoriaBolson === "bolson_frutas") return productosCache.filter((p) => p.categoria === "fruta");
-  if (categoriaBolson === "bolson_verduras") return productosCache.filter((p) => p.categoria === "verdura");
   return productosCache.filter((p) => !esCategoriaBolson(p.categoria));
 }
 
@@ -644,6 +665,35 @@ function contenidoBolsonATexto() {
     .join(", ");
 }
 
+// Si existe un producto llamado "{nombre} (unidad)", se considera vinculado
+// al producto por kg/medio kilo/100g del mismo nombre.
+function productoUnidadVinculado(productoOriginal) {
+  const nombreVinculado = `${productoOriginal.nombre} (unidad)`;
+  return productosCache.find((p) => p.nombre === nombreVinculado && p.id !== productoOriginal.id);
+}
+
+// Al cambiar el precio del producto original, el vinculado se recalcula
+// según su gramosPorUnidad fijo (ej. 200g), no una proporción de precios —
+// así editar el precio del "(unidad)" a mano no desincroniza la relación
+// real entre ambos productos.
+async function actualizarProductoUnidadVinculado(productoOriginal, precioPorKgNuevo) {
+  const vinculado = productoUnidadVinculado(productoOriginal);
+  if (!vinculado || !vinculado.gramosPorUnidad) return;
+
+  const nuevoPrecioVinculado = Math.round(precioPorKgNuevo * (vinculado.gramosPorUnidad / 1000));
+
+  await updateDoc(doc(db, "verdulerias", tiendaId, "productos", vinculado.id), { precioPorKg: nuevoPrecioVinculado });
+  vinculado.precioPorKg = nuevoPrecioVinculado;
+}
+
+// Activar/desactivar el producto original propaga el mismo estado al vinculado.
+async function actualizarActivoProductoUnidadVinculado(productoOriginal, activo) {
+  const vinculado = productoUnidadVinculado(productoOriginal);
+  if (!vinculado) return;
+  await updateDoc(doc(db, "verdulerias", tiendaId, "productos", vinculado.id), { activo });
+  vinculado.activo = activo;
+}
+
 function renderTabProductos() {
   const modalProducto = el("modal-producto");
   const inputBuscarProducto = el("input-buscar-producto");
@@ -652,11 +702,18 @@ function renderTabProductos() {
 
   activarFormatoMiles(el("np-precio"), () => el("btn-agregar-producto").click());
 
-  function actualizarVisibilidadSelectorCantidad() {
+  function actualizarVisibilidadPesoAproximado() {
     const unidad = el("np-unidad").value;
-    const aplica = unidad === "kg" || unidad === "medio_kg";
-    el("np-selector-cantidad-wrap").classList.toggle("oculto", !aplica);
-    if (!aplica) el("np-selector-cantidad").checked = false;
+    const aplica = unidad === "unidad" || unidad === "bolsa";
+    el("np-peso-aproximado-wrap").classList.toggle("oculto", !aplica);
+    if (!aplica) el("np-peso-aproximado").value = "";
+  }
+
+  function actualizarVisibilidadAtadoFraccionable() {
+    const unidad = el("np-unidad").value;
+    const aplica = unidad === "atado" || unidad === "unidad";
+    el("np-atado-fraccionable-wrap").classList.toggle("oculto", !aplica);
+    if (!aplica) el("np-atado-fraccionable").checked = false;
   }
 
   el("np-unidad").onchange = () => {
@@ -670,11 +727,8 @@ function renderTabProductos() {
     }
     selectUnidad.dataset.unidadPrevia = selectUnidad.value;
     el("np-precio-label").textContent = UNIDADES_VENTA[selectUnidad.value].precioLabel;
-    actualizarVisibilidadSelectorCantidad();
-  };
-
-  el("np-selector-cantidad").onchange = () => {
-    el("np-unidad").disabled = el("np-selector-cantidad").checked || esCategoriaBolson(el("np-categoria").value);
+    actualizarVisibilidadPesoAproximado();
+    actualizarVisibilidadAtadoFraccionable();
   };
 
   el("np-categoria").onchange = () => {
@@ -688,18 +742,21 @@ function renderTabProductos() {
     if (esBolson) {
       el("np-unidad").value = "unidad";
       el("np-precio-label").textContent = UNIDADES_VENTA.unidad.precioLabel;
-      el("np-nombre").value = nombreBolsonDisponible(NOMBRE_BASE_BOLSON[selectCategoria.value]);
+      el("np-nombre").value = "";
+      el("np-nombre").placeholder = "Ej: Bolsón Frutero";
       renderFilasContenidoBolson();
     } else {
       el("np-unidad").value = "kg";
       el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
       el("np-nombre").value = "";
-      el("np-nombre").placeholder = selectCategoria.value === "fruta" ? "Ej: Banana" : selectCategoria.value === "almacen" ? "Ej: Avena" : selectCategoria.value === "condimento" ? "Ej: Orégano" : "Ej: Zanahoria";
+      el("np-nombre").placeholder = selectCategoria.value === "almacen" ? "Ej: Avena" : selectCategoria.value === "condimento" ? "Ej: Orégano" : "Ej: Banana, Zanahoria...";
     }
     el("np-unidad").dataset.unidadPrevia = el("np-unidad").value;
     el("np-unidad").disabled = esBolson;
-    el("np-nombre").disabled = esBolson;
-    actualizarVisibilidadSelectorCantidad();
+    el("np-nombre").disabled = false;
+    actualizarVisibilidadPesoAproximado();
+    actualizarVisibilidadAtadoFraccionable();
+    if (esBolson) el("np-peso-aproximado-wrap").classList.add("oculto");
   };
 
   el("btn-agregar-item-bolson").onclick = () => {
@@ -713,7 +770,7 @@ function renderTabProductos() {
     el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
     el("np-nombre").disabled = false;
-    el("np-categoria").value = "verdura";
+    el("np-categoria").value = "verduleria";
     filasContenidoBolson = [];
     el("np-contenido-wrap").classList.add("oculto");
     el("np-unidad").value = "kg";
@@ -721,8 +778,8 @@ function renderTabProductos() {
     el("np-unidad").disabled = false;
     el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
     el("np-precio").value = "";
-    el("np-selector-cantidad").checked = false;
-    actualizarVisibilidadSelectorCantidad();
+    actualizarVisibilidadPesoAproximado();
+    actualizarVisibilidadAtadoFraccionable();
     el("btn-eliminar-producto-modal").classList.add("oculto");
     modalProducto.classList.remove("oculto");
   };
@@ -736,7 +793,7 @@ function renderTabProductos() {
   };
 
   el("btn-agregar-producto").onclick = async () => {
-    const nombre = el("np-nombre").value.trim();
+    const nombre = capitalizarPalabras(el("np-nombre").value.trim());
     const categoria = el("np-categoria").value;
     const esBolson = esCategoriaBolson(categoria);
     const contenido = esBolson ? contenidoBolsonATexto() : "";
@@ -744,7 +801,10 @@ function renderTabProductos() {
     const unidadVenta = el("np-unidad").value;
     const precioIngresado = parsearMiles(el("np-precio").value);
     const precio = precioIngresado * factorConversionPrecio(unidadVenta);
-    const selectorCantidad = (unidadVenta === "kg" || unidadVenta === "medio_kg") && el("np-selector-cantidad").checked;
+    const selectorCantidad = !esBolson && aplicaSelectorPasoExacto(unidadVenta);
+    const aplicaPesoAproximado = !esBolson && (unidadVenta === "unidad" || unidadVenta === "bolsa");
+    const pesoAproximadoGramos = aplicaPesoAproximado ? (parseInt(el("np-peso-aproximado").value) || null) : null;
+    const atadoFraccionable = !esBolson && (unidadVenta === "atado" || unidadVenta === "unidad") && el("np-atado-fraccionable").checked;
     if (!nombre || !precioIngresado || precioIngresado <= 0) {
       alert("Completá nombre y precio válido.");
       return;
@@ -755,8 +815,9 @@ function renderTabProductos() {
     }
 
     if (productoEnEdicion) {
+      await actualizarProductoUnidadVinculado(productoEnEdicion, precio);
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", productoEnEdicion.id), {
-        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad
+        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable
       });
       productoEnEdicion.nombre = nombre;
       productoEnEdicion.categoria = categoria;
@@ -765,11 +826,13 @@ function renderTabProductos() {
       productoEnEdicion.unidadVenta = unidadVenta;
       productoEnEdicion.precioPorKg = precio;
       productoEnEdicion.selectorCantidad = selectorCantidad;
+      productoEnEdicion.pesoAproximadoGramos = pesoAproximadoGramos;
+      productoEnEdicion.atadoFraccionable = atadoFraccionable;
     } else {
       const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
-        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, activo: true
+        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true
       });
-      productosCache.push({ id: ref.id, nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, activo: true });
+      productosCache.push({ id: ref.id, nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true });
     }
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     modalProducto.classList.add("oculto");
@@ -785,7 +848,7 @@ function abrirModalEditarProducto(producto) {
   el("modal-producto-titulo").textContent = "Editar producto";
   el("btn-agregar-producto").textContent = "Guardar cambios";
   el("np-nombre").value = producto.nombre;
-  el("np-nombre").disabled = esCategoriaBolson(producto.categoria);
+  el("np-nombre").disabled = false;
   el("np-categoria").value = producto.categoria;
   filasContenidoBolson = (producto.contenidoItems || []).map((f) => ({ ...f }));
   el("np-contenido-wrap").classList.toggle("oculto", !esCategoriaBolson(producto.categoria));
@@ -794,28 +857,29 @@ function abrirModalEditarProducto(producto) {
   el("np-unidad").dataset.unidadPrevia = unidad;
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
   el("np-precio").value = formatoMiles(producto.precioPorKg / factorConversionPrecio(unidad));
-  const aplicaSelectorCantidad = unidad === "kg" || unidad === "medio_kg";
-  el("np-selector-cantidad-wrap").classList.toggle("oculto", !aplicaSelectorCantidad);
-  el("np-selector-cantidad").checked = aplicaSelectorCantidad && !!producto.selectorCantidad;
-  el("np-unidad").disabled = esCategoriaBolson(producto.categoria) || el("np-selector-cantidad").checked;
+  el("np-unidad").disabled = esCategoriaBolson(producto.categoria);
+  const aplicaPesoAproximado = !esCategoriaBolson(producto.categoria) && (unidad === "unidad" || unidad === "bolsa");
+  el("np-peso-aproximado-wrap").classList.toggle("oculto", !aplicaPesoAproximado);
+  el("np-peso-aproximado").value = aplicaPesoAproximado && producto.pesoAproximadoGramos ? producto.pesoAproximadoGramos : "";
+  const aplicaAtadoFraccionable = !esCategoriaBolson(producto.categoria) && (unidad === "atado" || unidad === "unidad");
+  el("np-atado-fraccionable-wrap").classList.toggle("oculto", !aplicaAtadoFraccionable);
+  el("np-atado-fraccionable").checked = aplicaAtadoFraccionable && !!producto.atadoFraccionable;
   el("btn-eliminar-producto-modal").classList.remove("oculto");
   el("modal-producto").classList.remove("oculto");
 }
 
 const CATEGORIAS_ADMIN = [
   { clave: "bolson", titulo: "Bolsones" },
-  { clave: "fruta", titulo: "Frutas" },
-  { clave: "verdura", titulo: "Verduras" },
+  { clave: "verduleria", titulo: "Verdulería" },
   { clave: "condimento", titulo: "Condimentos" },
   { clave: "almacen", titulo: "Almacén" },
 ];
 
 function claveCategoriaAdmin(p) {
   if (esCategoriaBolson(p.categoria)) return "bolson";
-  if (p.categoria === "fruta") return "fruta";
   if (p.categoria === "almacen") return "almacen";
   if (p.categoria === "condimento") return "condimento";
-  return "verdura";
+  return "verduleria";
 }
 
 function renderListaProductosAdmin() {
@@ -833,7 +897,7 @@ function renderListaProductosAdmin() {
   }
 
   const hayFiltro = !!filtroTextoProducto.trim();
-  const grupos = { bolson: [], fruta: [], verdura: [], almacen: [], condimento: [] };
+  const grupos = { bolson: [], verduleria: [], almacen: [], condimento: [] };
   lista.forEach((p) => grupos[claveCategoriaAdmin(p)].push(p));
 
   const filaProducto = (p) => {
@@ -842,7 +906,7 @@ function renderListaProductosAdmin() {
     <div class="producto-admin" data-id="${p.id}">
       <div>
         <div style="font-weight:600;">${p.nombre}</div>
-        <div style="font-size:12px;color:var(--gris);">${esUnidadEntera(p.unidadVenta || "kg") ? unidad.precioLabel : `${unidad.precioLabel} · ${p.selectorCantidad ? "cliente elige cantidad" : "suma de a " + textoPasoIncremento(p.unidadVenta || "kg")}`}</div>
+        <div style="font-size:12px;color:var(--gris);">${aplicaSelectorPasoExacto(p.unidadVenta || "kg") ? `${unidad.precioLabel} · cliente elige cantidad` : unidad.precioLabel}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="campo-precio">
@@ -887,14 +951,18 @@ function renderListaProductosAdmin() {
       const ingresado = parsearMiles(ev.target.value);
       if (!ingresado || ingresado <= 0) return;
       const nuevoPrecio = ingresado * factorConversionPrecio(producto.unidadVenta || "kg");
+      await actualizarProductoUnidadVinculado(producto, nuevoPrecio);
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { precioPorKg: nuevoPrecio });
       producto.precioPorKg = nuevoPrecio;
+      renderListaProductosAdmin();
     });
 
     row.querySelector('[data-campo="activo"]').addEventListener("change", async (ev) => {
       const activo = ev.target.checked;
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", id), { activo });
       producto.activo = activo;
+      await actualizarActivoProductoUnidadVinculado(producto, activo);
+      renderListaProductosAdmin();
     });
 
     row.querySelector('[data-accion="editar"]').addEventListener("click", () => {
