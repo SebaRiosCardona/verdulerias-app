@@ -146,6 +146,7 @@ const params = new URLSearchParams(window.location.search);
 const tiendaId = params.get("tienda") || TIENDA_POR_DEFECTO;
 
 const CLAVE_SESION = `verduleria_sesion_${tiendaId}`;
+const CLAVE_CARRITO = `verduleria_carrito_${tiendaId}`;
 
 const LOGOS_POR_TIENDA = {
   "vida-verde": "logo-vida-verde.svg",
@@ -417,6 +418,23 @@ let categoriasAbiertas = {}; // { [categoria]: boolean } — recuerda qué secci
 let pasosSeleccionados = {}; // { [productoId]: paso } — paso de +/- elegido para productos con selector
 let selectoresPasoAbiertos = {}; // { [productoId]: boolean } — si el selector de paso está desplegado
 
+function guardarCarrito() {
+  if (Object.keys(carrito).length === 0) {
+    localStorage.removeItem(CLAVE_CARRITO);
+  } else {
+    localStorage.setItem(CLAVE_CARRITO, JSON.stringify(carrito));
+  }
+}
+
+function cargarCarritoGuardado() {
+  try {
+    const guardado = localStorage.getItem(CLAVE_CARRITO);
+    return guardado ? JSON.parse(guardado) : {};
+  } catch {
+    return {};
+  }
+}
+
 // ---------------------------------------------------------------
 // Arranque
 // ---------------------------------------------------------------
@@ -451,6 +469,11 @@ async function cargarTienda() {
     nombreTiendaEl.textContent = tiendaInfo.nombre || "Verdulería";
     tituloCatalogo.textContent = tiendaInfo.nombre || "Catálogo";
     document.title = (tiendaInfo.nombre || "Verdulería") + " — Pedidos";
+
+    const textoComoFunciona = el("texto-como-funciona");
+    if (textoComoFunciona) {
+      textoComoFunciona.innerHTML = `Elegí un bolsón ya armado o creá el tuyo personalizado con los productos que más te gusten, en la cantidad exacta que necesitás. A partir de <strong>${formatoMoneda(montoMinimoDescuento())}</strong> en tu pedido, accedés a un <strong>${Math.round(porcentajeDescuento() * 100)}% de descuento</strong> sobre el total.`;
+    }
 
     await cargarProductos();
 
@@ -531,6 +554,7 @@ btnSalir2.addEventListener("click", cerrarSesion);
 
 function cerrarSesion() {
   localStorage.removeItem(CLAVE_SESION);
+  localStorage.removeItem(CLAVE_CARRITO);
   cliente = null;
   carrito = {};
   inputNombre.value = "";
@@ -547,6 +571,7 @@ function mostrarCatalogo() {
   vistaCatalogo.classList.remove("oculto");
   vistaMisCompras.classList.add("oculto");
   saludoCliente.textContent = `Hola ${cliente.nombre}!`;
+  carrito = cargarCarritoGuardado();
   renderProductos();
   actualizarBarraCarrito();
 }
@@ -662,6 +687,7 @@ function renderProductos() {
       nuevo = Math.round(nuevo * 100) / 100;
       if (nuevo === 0) delete carrito[id];
       else carrito[id] = nuevo;
+      guardarCarrito();
       renderProductos();
       actualizarBarraCarrito();
     });
@@ -674,6 +700,7 @@ function renderProductos() {
       const nuevoPaso = parseFloat(btn.dataset.pasoValor);
       if (pasosSeleccionados[id] !== nuevoPaso) {
         delete carrito[id];
+        guardarCarrito();
       }
       pasosSeleccionados[id] = nuevoPaso;
       renderProductos();
@@ -929,6 +956,7 @@ async function enviarPedido(resumen) {
 
     ultimoPedidoId = pedidoRef.id;
     carrito = {};
+    localStorage.removeItem(CLAVE_CARRITO);
 
     const linkWhatsApp = armarLinkWhatsApp({ ...resumen, total: totalConEnvio, tipoEntrega: tipoEntregaSeleccionado, ubicacionEntrega, distanciaKm: distancia, costoEnvio, direccionEntrega }, momentoSeleccionado);
     if (linkWhatsApp && ventanaWhatsApp) {
