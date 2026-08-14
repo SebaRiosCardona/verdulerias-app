@@ -56,6 +56,7 @@ const UNIDADES_VENTA = {
   medio_kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   "100g": { paso: 0.1, formato: (c) => c < 1 ? formatoGramos(c) : formatoKg(c), kgPorUnidad: 1 },
   unidad: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
+  atado: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
 };
 
 function unidadDe(producto) {
@@ -66,10 +67,14 @@ function pasoDe(producto) {
   return unidadDe(producto).paso;
 }
 
+function esUnidadEntera(unidadVenta) {
+  return unidadVenta === "unidad" || unidadVenta === "atado";
+}
+
 function textoPasoFijo(producto) {
   const unidad = producto?.unidadVenta || "kg";
   if (unidad === "100g") return "100g";
-  if (unidad === "unidad") return "1 unidad";
+  if (esUnidadEntera(unidad)) return "1 unidad";
   return "500g";
 }
 
@@ -604,7 +609,7 @@ function renderFilaProducto(p) {
       <div class="producto-fila">
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
-          <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : "/ kg"}</div>
+          <div class="producto-precio">${formatoMoneda(p.precioPorKg)} ${p.unidadVenta === "unidad" ? "/ unidad" : p.unidadVenta === "atado" ? "/ atado" : "/ kg"}</div>
           ${selectorPaso}
         </div>
         <div class="producto-cantidad">

@@ -62,8 +62,12 @@ function activarFormatoMiles(input, alConfirmar) {
 function formatoKg(valor) {
   return (Math.round(valor * 10) / 10).toFixed(1) + " kg";
 }
+function esUnidadEntera(unidadVenta) {
+  return unidadVenta === "unidad" || unidadVenta === "atado";
+}
+
 function formatoCantidad(item) {
-  if ((item.unidadVenta || "kg") === "unidad") return `${Math.round(item.kg)} u.`;
+  if (esUnidadEntera(item.unidadVenta || "kg")) return `${Math.round(item.kg)} u.`;
   return formatoKg(item.kg);
 }
 
@@ -482,11 +486,12 @@ const UNIDADES_VENTA = {
   medio_kg: { etiqueta: "Medio kilo", etiquetaCorta: "kg", precioLabel: "Precio por medio kilo", sufijoPrecio: "/ kg", paso: 0.5 },
   "100g": { etiqueta: "100 gramos", etiquetaCorta: "100g", precioLabel: "Precio por 100g", sufijoPrecio: "/ kg", paso: 0.1 },
   unidad: { etiqueta: "Unidad", etiquetaCorta: "u", precioLabel: "Precio por unidad", sufijoPrecio: "/ unidad", paso: 1 },
+  atado: { etiqueta: "Atado", etiquetaCorta: "atado", precioLabel: "Precio por atado", sufijoPrecio: "/ atado", paso: 1 },
 };
 
 function textoPasoIncremento(unidadVenta) {
   if (unidadVenta === "100g") return "100g";
-  if (unidadVenta === "unidad") return "1 unidad";
+  if (esUnidadEntera(unidadVenta)) return "1 unidad";
   return "500g";
 }
 
@@ -518,7 +523,7 @@ function nombreBolsonDisponible(nombreBase) {
 }
 
 function formatoCantidadItem(producto, cantidad) {
-  if ((producto?.unidadVenta || "kg") === "unidad") {
+  if (esUnidadEntera(producto?.unidadVenta || "kg")) {
     const n = Math.round(cantidad);
     return `${n} ${n === 1 ? "unidad" : "unidades"}`;
   }
@@ -837,7 +842,7 @@ function renderListaProductosAdmin() {
     <div class="producto-admin" data-id="${p.id}">
       <div>
         <div style="font-weight:600;">${p.nombre}</div>
-        <div style="font-size:12px;color:var(--gris);">${(p.unidadVenta || "kg") === "unidad" ? unidad.precioLabel : `${unidad.precioLabel} · ${p.selectorCantidad ? "cliente elige cantidad" : "suma de a " + textoPasoIncremento(p.unidadVenta || "kg")}`}</div>
+        <div style="font-size:12px;color:var(--gris);">${esUnidadEntera(p.unidadVenta || "kg") ? unidad.precioLabel : `${unidad.precioLabel} · ${p.selectorCantidad ? "cliente elige cantidad" : "suma de a " + textoPasoIncremento(p.unidadVenta || "kg")}`}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="campo-precio">
