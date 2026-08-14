@@ -821,7 +821,7 @@ input:checked + .slider:before { transform:translateX(20px); }
 .modal-producto .campo-checkbox input[type="checkbox"] { width:auto; margin:0; flex-shrink:0; }
 .fila-item-bolson { display:flex; gap:6px; align-items:center; padding:8px 0; border-bottom:1px solid var(--gris-claro); }
 .fila-item-bolson:last-of-type { border-bottom:none; }
-.fila-item-bolson select { flex:1.3; width:auto; padding:8px 6px; }
+.fila-item-bolson select, .fila-item-bolson input[data-campo="producto"] { flex:1.3; width:auto; padding:8px 6px; }
 .cantidad-item-bolson { display:flex; align-items:center; gap:6px; flex-shrink:0; }
 .btn-qty-bolson { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--verde); background:transparent; color:var(--verde); font-size:15px; font-weight:700; line-height:1; touch-action:manipulation; flex-shrink:0; padding:0; }
 .btn-qty-bolson:disabled { border-color:var(--gris-claro); color:var(--gris-claro); }

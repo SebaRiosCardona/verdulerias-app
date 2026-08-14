@@ -503,6 +503,20 @@ function esCategoriaBolson(categoria) {
   return categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
 }
 
+const NOMBRE_BASE_BOLSON = {
+  bolson_frutas: "Bolsón Frutero",
+  bolson_verduras: "Bolsón Verdulero",
+  bolson_mixto: "Bolsón Mixto",
+};
+
+function nombreBolsonDisponible(nombreBase) {
+  const nombresExistentes = new Set(productosCache.map((p) => p.nombre));
+  if (!nombresExistentes.has(nombreBase)) return nombreBase;
+  let n = 2;
+  while (nombresExistentes.has(`${nombreBase} ${n}`)) n++;
+  return `${nombreBase} ${n}`;
+}
+
 function formatoCantidadItem(producto, cantidad) {
   if ((producto?.unidadVenta || "kg") === "unidad") {
     const n = Math.round(cantidad);
@@ -558,10 +572,7 @@ function renderFilasContenidoBolson() {
     const unidadFila = UNIDADES_VENTA[productoFila?.unidadVenta || "kg"];
     return `
     <div class="fila-item-bolson" data-index="${index}">
-      <select data-campo="producto">
-        <option value="">Elegir producto...</option>
-        ${disponibles.map((p) => `<option value="${p.id}" ${fila.productoId === p.id ? "selected" : ""}>${p.nombre}</option>`).join("")}
-      </select>
+      <input type="text" list="lista-productos-bolson" data-campo="producto" placeholder="Buscar producto..." value="${productoFila?.nombre || ""}" autocomplete="off" />
       <div class="cantidad-item-bolson">
         <button type="button" class="btn-qty-bolson" data-accion="restar-item" ${fila.cantidad > 0 ? "" : "disabled"}>−</button>
         <span class="valor-qty-bolson">${fila.cantidad || 0}</span>
@@ -573,11 +584,20 @@ function renderFilasContenidoBolson() {
   `;
   }).join("");
 
+  const datalist = el("lista-productos-bolson");
+  if (datalist) {
+    datalist.innerHTML = disponibles.map((p) => `<option value="${p.nombre}">`).join("");
+  }
+
   contenedor.querySelectorAll(".fila-item-bolson").forEach((filaEl) => {
     const index = parseInt(filaEl.dataset.index);
 
-    filaEl.querySelector('[data-campo="producto"]').addEventListener("change", (ev) => {
-      filasContenidoBolson[index].productoId = ev.target.value;
+    const inputProducto = filaEl.querySelector('[data-campo="producto"]');
+    inputProducto.addEventListener("input", (ev) => {
+      const nombreEscrito = ev.target.value.trim().toLowerCase();
+      const producto = disponibles.find((p) => p.nombre.toLowerCase() === nombreEscrito);
+      if (!producto) return;
+      filasContenidoBolson[index].productoId = producto.id;
       filasContenidoBolson[index].cantidad = 0;
       renderFilasContenidoBolson();
     });
@@ -663,7 +683,7 @@ function renderTabProductos() {
     if (esBolson) {
       el("np-unidad").value = "unidad";
       el("np-precio-label").textContent = UNIDADES_VENTA.unidad.precioLabel;
-      el("np-nombre").value = selectCategoria.selectedOptions[0].textContent;
+      el("np-nombre").value = nombreBolsonDisponible(NOMBRE_BASE_BOLSON[selectCategoria.value]);
       renderFilasContenidoBolson();
     } else {
       el("np-unidad").value = "kg";

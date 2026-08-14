@@ -82,6 +82,7 @@ function subtotalDe(producto, cantidad) {
 }
 
 function kgEquivalente(producto, cantidad) {
+  if (esCategoriaBolson(producto?.categoria)) return 0;
   return cantidad * unidadDe(producto).kgPorUnidad;
 }
 
