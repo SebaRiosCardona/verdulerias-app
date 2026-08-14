@@ -38,9 +38,9 @@
   <!-- Login público: nombre + apellido -->
   <div id="vista-login" class="pantalla-login oculto">
     <div class="login-top">
-      <div class="logo">🥬</div>
+      <div class="logo" id="logo-tienda">🥬</div>
       <h1 id="nombre-tienda">Verdulería</h1>
-      <p>Armá tu bolsón y confirmá tu pedido</p>
+      <p id="slogan-tienda">Armá tu bolsón y confirmá tu pedido</p>
     </div>
     <div class="login-bottom">
       <form class="card-login" id="form-login">
@@ -83,6 +83,7 @@
         </svg>
         <input id="input-buscar" type="text" placeholder="Buscar fruta o verdura..." />
       </div>
+      <div id="categorias-nav" class="categorias-nav"></div>
     </div>
 
     <main id="lista-productos"></main>

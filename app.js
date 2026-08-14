@@ -147,6 +147,28 @@ const tiendaId = params.get("tienda") || TIENDA_POR_DEFECTO;
 
 const CLAVE_SESION = `verduleria_sesion_${tiendaId}`;
 
+const LOGOS_POR_TIENDA = {
+  "vida-verde": "logo-vida-verde.svg",
+};
+
+const SLOGANS_POR_TIENDA = {
+  "vida-verde": "Fresco, natural, Vida Verde",
+};
+
+if (LOGOS_POR_TIENDA[tiendaId]) {
+  const elLogo = document.getElementById("logo-tienda");
+  if (elLogo) {
+    elLogo.innerHTML = `<img src="${LOGOS_POR_TIENDA[tiendaId]}" alt="Logo" />`;
+  }
+}
+
+if (SLOGANS_POR_TIENDA[tiendaId]) {
+  const elSlogan = document.getElementById("slogan-tienda");
+  if (elSlogan) {
+    elSlogan.textContent = SLOGANS_POR_TIENDA[tiendaId];
+  }
+}
+
 // ---------------------------------------------------------------
 // Manifest dinámico por tienda
 // ---------------------------------------------------------------
@@ -206,6 +228,7 @@ const saludoClienteCompras = el("saludo-cliente-compras");
 
 const inputBuscar = el("input-buscar");
 const listaProductos = el("lista-productos");
+const categoriasNav = el("categorias-nav");
 
 const barraDescuento = el("barra-descuento");
 const barraKg = el("barra-kg");
@@ -548,6 +571,33 @@ document.addEventListener("click", (ev) => {
   });
 });
 
+function renderCategoriasNav(categoriasPresentes) {
+  if (!categoriasNav) return;
+  if (categoriasPresentes.length <= 1) {
+    categoriasNav.innerHTML = "";
+    return;
+  }
+  categoriasNav.innerHTML = categoriasPresentes.map(({ clave, titulo }) => `
+    <button type="button" class="categoria-nav-pill" data-ir-a="${clave}">${titulo}</button>
+  `).join("");
+
+  categoriasNav.querySelectorAll("[data-ir-a]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const clave = btn.dataset.irA;
+      const detalle = document.getElementById(`categoria-${clave}`);
+      if (!detalle) return;
+      if (!detalle.open) {
+        detalle.open = true;
+        categoriasAbiertas[clave] = true;
+      }
+      const buscadorEl = document.querySelector(".buscador");
+      const offset = (buscadorEl?.getBoundingClientRect().bottom || 0) + 8;
+      const destino = detalle.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: destino, behavior: "smooth" });
+    });
+  });
+}
+
 function renderProductos() {
   const hayBusqueda = !!(inputBuscar.value || "").trim();
   const texto = slugify(inputBuscar.value || "");
@@ -567,17 +617,20 @@ function renderProductos() {
   });
 
   let html = "";
+  const categoriasPresentes = [];
   CATEGORIAS_CATALOGO.forEach(({ clave, titulo }) => {
     if (!grupos[clave].length) return;
+    categoriasPresentes.push({ clave, titulo });
     const abierto = hayBusqueda || categoriasAbiertas[clave] !== false;
     html += `
-      <details class="categoria-grupo" data-categoria="${clave}" ${abierto ? "open" : ""}>
+      <details class="categoria-grupo" id="categoria-${clave}" data-categoria="${clave}" ${abierto ? "open" : ""}>
         <summary class="categoria-titulo">${titulo}<span class="categoria-flecha">▾</span></summary>
         <div class="categoria-productos">${grupos[clave].map(renderFilaProducto).join("")}</div>
       </details>
     `;
   });
   listaProductos.innerHTML = html;
+  renderCategoriasNav(categoriasPresentes);
 
   listaProductos.querySelectorAll(".categoria-grupo").forEach((detalle) => {
     detalle.addEventListener("toggle", () => {
@@ -654,15 +707,14 @@ function renderFilaProducto(p) {
 
   const selectorPaso = opcionesPaso ? `
     <details class="detalle-selector-paso" data-id="${p.id}" ${selectoresPasoAbiertos[p.id] ? "open" : ""}>
-      <summary>Elegir cantidad <span class="paso-elegido-actual">(${opcionActual.etiqueta})</span></summary>
+      <summary>x ${opcionActual.etiqueta}</summary>
       <div class="selector-paso">
         ${opcionesPaso.map((op) => `
           <button type="button" class="paso-opcion ${pasosSeleccionados[p.id] === op.valor ? "activo" : ""}" data-id="${p.id}" data-accion-paso data-paso-valor="${op.valor}">${op.etiqueta}</button>
         `).join("")}
       </div>
     </details>
-    <div class="texto-paso-fijo">Suma de a ${opcionActual.etiqueta}</div>
-  ` : `<div class="texto-paso-fijo">Suma de a ${textoPasoFijo(p)}</div>`;
+  ` : `<div class="texto-paso-fijo">x ${textoPasoFijo(p)}</div>`;
 
   return `
     <div class="producto">
@@ -670,12 +722,14 @@ function renderFilaProducto(p) {
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
           <div class="producto-precio">${formatoMoneda(p.precioPorKg / factorConversionPrecio(unidadVenta))} ${sufijoPrecioDe(unidadVenta)}${p.pesoAproximadoGramos ? ` (aprox. ${textoPesoAproximado(p.pesoAproximadoGramos)})` : ""}</div>
-          ${selectorPaso}
         </div>
         <div class="producto-cantidad">
-          <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>
-          <div class="qty-valor">${cantidad > 0 ? formatoCantidad(p, cantidad) : "—"}</div>
-          <button class="btn-qty" data-id="${p.id}" data-accion="sumar">+</button>
+          ${selectorPaso}
+          <div class="producto-cantidad-botones">
+            <button class="btn-qty" data-id="${p.id}" data-accion="restar" ${cantidad <= 0 ? "disabled" : ""}>−</button>
+            <div class="qty-valor">${cantidad > 0 ? formatoCantidad(p, cantidad) : "—"}</div>
+            <button class="btn-qty" data-id="${p.id}" data-accion="sumar">+</button>
+          </div>
         </div>
       </div>
       ${tieneContenido ? `
