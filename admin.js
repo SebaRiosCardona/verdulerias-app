@@ -429,12 +429,16 @@ function inicializarMapaLocal() {
 
 function renderTabConfiguracion() {
   const inputTelefonoCfg = el("cfg-telefono");
+  const inputAliasCfg = el("cfg-alias");
   inputTelefonoCfg.value = tiendaInfo.telefonoContacto || "";
+  inputAliasCfg.value = tiendaInfo.alias || "";
   el("btn-guardar-telefono").onclick = async () => {
     const telefonoContacto = inputTelefonoCfg.value.replace(/\D/g, "");
-    await updateDoc(doc(db, "verdulerias", tiendaId), { telefonoContacto });
+    const alias = inputAliasCfg.value.trim();
+    await updateDoc(doc(db, "verdulerias", tiendaId), { telefonoContacto, alias });
     tiendaInfo.telefonoContacto = telefonoContacto;
-    alert("Teléfono de contacto guardado.");
+    tiendaInfo.alias = alias;
+    alert("Datos guardados.");
   };
 
   inicializarMapaLocal();

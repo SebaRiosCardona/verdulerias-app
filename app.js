@@ -654,7 +654,7 @@ function renderFilaProducto(p) {
 
   const selectorPaso = opcionesPaso ? `
     <details class="detalle-selector-paso" data-id="${p.id}" ${selectoresPasoAbiertos[p.id] ? "open" : ""}>
-      <summary>elegir cantidad <span class="paso-elegido-actual">(${opcionActual.etiqueta})</span></summary>
+      <summary>Elegir cantidad <span class="paso-elegido-actual">(${opcionActual.etiqueta})</span></summary>
       <div class="selector-paso">
         ${opcionesPaso.map((op) => `
           <button type="button" class="paso-opcion ${pasosSeleccionados[p.id] === op.valor ? "activo" : ""}" data-id="${p.id}" data-accion-paso data-paso-valor="${op.valor}">${op.etiqueta}</button>
@@ -705,21 +705,22 @@ function calcularCarrito() {
   });
   const pesoTotalKg = items.reduce((acc, it) => acc + it.kgEquivalente, 0);
   const subtotal = items.reduce((acc, it) => acc + it.subtotal, 0);
-  const cumpleMinimo = subtotal >= montoMinimoDescuento();
-  const descuentoMonto = cumpleMinimo ? subtotal * porcentajeDescuento() : 0;
+  const subtotalElegibleDescuento = items.reduce((acc, it) => acc + (esCategoriaBolson(it.categoria) ? 0 : it.subtotal), 0);
+  const cumpleMinimo = subtotalElegibleDescuento >= montoMinimoDescuento();
+  const descuentoMonto = cumpleMinimo ? subtotalElegibleDescuento * porcentajeDescuento() : 0;
   const total = subtotal - descuentoMonto;
-  return { items, pesoTotalKg, subtotal, cumpleMinimo, descuentoMonto, total };
+  return { items, pesoTotalKg, subtotal, subtotalElegibleDescuento, cumpleMinimo, descuentoMonto, total };
 }
 
 function actualizarBarraCarrito() {
-  const { items, subtotal, total, cumpleMinimo, pesoTotalKg } = calcularCarrito();
+  const { items, total, cumpleMinimo, pesoTotalKg, subtotalElegibleDescuento } = calcularCarrito();
 
   const porcentajeTexto = Math.round(porcentajeDescuento() * 100);
   if (cumpleMinimo) {
     barraDescuento.className = "barra-descuento lograda";
     barraDescuento.textContent = `¡${porcentajeTexto}% de descuento aplicado por superar los ${formatoMoneda(montoMinimoDescuento())}! 🎉`;
   } else {
-    const faltan = montoMinimoDescuento() - subtotal;
+    const faltan = montoMinimoDescuento() - subtotalElegibleDescuento;
     barraDescuento.className = "barra-descuento falta";
     barraDescuento.textContent = `Te faltan ${formatoMoneda(faltan)} para el ${porcentajeTexto}% de descuento`;
   }
@@ -928,23 +929,33 @@ function armarLinkWhatsApp(p, momentoRetiro) {
   const telefono = tiendaInfo?.telefonoContacto;
   if (!telefono) return null;
   const itemsTextoWhatsApp = (p.items || []).map((it) => `• ${it.nombre} — ${formatoCantidad(it, it.kg)}`).join("\n");
+  const esEnvio = p.tipoEntrega === "envio" && p.direccionEntrega;
+  const costoEnvio = esEnvio ? (p.costoEnvio || 0) : 0;
+  const totalPedido = p.total - costoEnvio;
+
   const lineasWhatsApp = [
     "Hola! Te paso mi pedido para que lo confirmes:",
     "",
     itemsTextoWhatsApp,
     "",
-    `Total: ${formatoMoneda(p.total)}`,
   ];
-  if (p.tipoEntrega === "envio" && p.direccionEntrega) {
+  if (esEnvio) {
+    lineasWhatsApp.push(`Total pedido: ${formatoMoneda(totalPedido)}`);
+    lineasWhatsApp.push(`Total envío: ${formatoMoneda(costoEnvio)}${p.distanciaKm ? ` (${p.distanciaKm.toFixed(1)} km)` : ""}`);
+    lineasWhatsApp.push(`TOTAL: ${formatoMoneda(p.total)}`);
+    if (tiendaInfo?.alias) lineasWhatsApp.push(`Alias: ${tiendaInfo.alias}`);
     const d = p.direccionEntrega;
     lineasWhatsApp.push("");
     lineasWhatsApp.push(`Envío a: ${d.direccion}${d.pisoDepto ? ", " + d.pisoDepto : ""}`);
-    lineasWhatsApp.push(`Envío: ${formatoMoneda(p.costoEnvio || 0)}${p.distanciaKm ? ` (${p.distanciaKm.toFixed(1)} km)` : ""}`);
     if (p.ubicacionEntrega) lineasWhatsApp.push(`Ver ubicación: https://maps.google.com/?q=${p.ubicacionEntrega.lat},${p.ubicacionEntrega.lng}`);
     lineasWhatsApp.push(`A nombre de: ${d.nombre} ${d.apellido} — Tel: ${d.telefono}`);
     if (d.notas) lineasWhatsApp.push(`Notas: ${d.notas}`);
-  } else if (momentoRetiro && MOMENTOS_TEXTO[momentoRetiro]) {
-    lineasWhatsApp.push(`Paso a buscarlo por la ${MOMENTOS_TEXTO[momentoRetiro]}`);
+  } else {
+    lineasWhatsApp.push(`Total: ${formatoMoneda(p.total)}`);
+    if (tiendaInfo?.alias) lineasWhatsApp.push(`Alias: ${tiendaInfo.alias}`);
+    if (momentoRetiro && MOMENTOS_TEXTO[momentoRetiro]) {
+      lineasWhatsApp.push(`Paso a buscarlo por la ${MOMENTOS_TEXTO[momentoRetiro]}`);
+    }
   }
   const mensajeWhatsApp = encodeURIComponent(lineasWhatsApp.join("\n"));
   return `https://wa.me/54${telefono}?text=${mensajeWhatsApp}`;
