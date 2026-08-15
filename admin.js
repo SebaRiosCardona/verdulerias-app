@@ -791,6 +791,7 @@ function renderTabProductos() {
     el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
     el("np-nombre").disabled = false;
+    el("np-imagen-url").value = "";
     el("np-categoria").value = "verduleria";
     filasContenidoBolson = [];
     el("np-contenido-wrap").classList.add("oculto");
@@ -815,6 +816,7 @@ function renderTabProductos() {
 
   el("btn-agregar-producto").onclick = async () => {
     const nombre = capitalizarPalabras(el("np-nombre").value.trim());
+    const imagenUrl = el("np-imagen-url").value.trim();
     const categoria = el("np-categoria").value;
     const esBolson = esCategoriaBolson(categoria);
     const contenido = esBolson ? contenidoBolsonATexto() : "";
@@ -838,9 +840,10 @@ function renderTabProductos() {
     if (productoEnEdicion) {
       await actualizarProductoUnidadVinculado(productoEnEdicion, precio);
       await updateDoc(doc(db, "verdulerias", tiendaId, "productos", productoEnEdicion.id), {
-        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable
+        nombre, imagenUrl, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable
       });
       productoEnEdicion.nombre = nombre;
+      productoEnEdicion.imagenUrl = imagenUrl;
       productoEnEdicion.categoria = categoria;
       productoEnEdicion.contenido = contenido;
       productoEnEdicion.contenidoItems = contenidoItems;
@@ -851,9 +854,9 @@ function renderTabProductos() {
       productoEnEdicion.atadoFraccionable = atadoFraccionable;
     } else {
       const ref = await addDoc(collection(db, "verdulerias", tiendaId, "productos"), {
-        nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true
+        nombre, imagenUrl, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true
       });
-      productosCache.push({ id: ref.id, nombre, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true });
+      productosCache.push({ id: ref.id, nombre, imagenUrl, categoria, contenido, contenidoItems, unidadVenta, precioPorKg: precio, selectorCantidad, pesoAproximadoGramos, atadoFraccionable, activo: true });
     }
     productosCache.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
     modalProducto.classList.add("oculto");
@@ -870,6 +873,7 @@ function abrirModalEditarProducto(producto) {
   el("btn-agregar-producto").textContent = "Guardar cambios";
   el("np-nombre").value = producto.nombre;
   el("np-nombre").disabled = false;
+  el("np-imagen-url").value = producto.imagenUrl || "";
   el("np-categoria").value = producto.categoria;
   filasContenidoBolson = (producto.contenidoItems || []).map((f) => ({ ...f }));
   el("np-contenido-wrap").classList.toggle("oculto", !esCategoriaBolson(producto.categoria));

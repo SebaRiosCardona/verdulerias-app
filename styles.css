@@ -358,14 +358,30 @@ main {
   padding: 12px 14px;
   margin-bottom: 8px;
   box-shadow: 0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10);
+  overflow: hidden;
+}
+.producto-con-imagen {
+  background-size: cover;
+  background-position: center;
+}
+.producto-con-imagen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #fff 40%, rgba(255,255,255,.75) 75%, rgba(255,255,255,.55));
+  z-index: 0;
 }
 .producto-fila {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 .producto-detalle {
+  position: relative;
+  z-index: 1;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px dashed var(--gris-claro);

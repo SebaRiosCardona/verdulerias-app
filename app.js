@@ -150,10 +150,12 @@ const CLAVE_CARRITO = `verduleria_carrito_${tiendaId}`;
 
 const LOGOS_POR_TIENDA = {
   "vida-verde": "logo-vida-verde.svg",
+  "demo": "logo-vida-verde.svg",
 };
 
 const SLOGANS_POR_TIENDA = {
   "vida-verde": "Productos frescos y de calidad",
+  "demo": "Productos frescos y de calidad",
 };
 
 if (LOGOS_POR_TIENDA[tiendaId]) {
@@ -748,8 +750,10 @@ function renderFilaProducto(p) {
     </details>
   ` : `<div class="texto-paso-fijo">x ${textoPasoFijo(p)}</div>`;
 
+  const estiloImagen = p.imagenUrl ? ` style="background-image:url('${p.imagenUrl.replace(/'/g, "%27")}')"` : "";
+
   return `
-    <div class="producto">
+    <div class="producto${p.imagenUrl ? " producto-con-imagen" : ""}"${estiloImagen}>
       <div class="producto-fila">
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
