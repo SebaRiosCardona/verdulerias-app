@@ -10,7 +10,7 @@ import {
 
 // Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
 // para evitar que el navegador siga mostrando la versión vieja cacheada.
-const VERSION_IMAGENES = 3;
+const VERSION_IMAGENES = 4;
 
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
