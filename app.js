@@ -10,7 +10,7 @@ import {
 
 // Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
 // para evitar que el navegador siga mostrando la versión vieja cacheada.
-const VERSION_IMAGENES = 4;
+const VERSION_IMAGENES = 5;
 
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
@@ -634,6 +634,15 @@ function renderCategoriasNav(categoriasPresentes) {
   });
 }
 
+function actualizarFilaCantidad(id, producto, cantidad) {
+  const fila = listaProductos.querySelector(`.producto-cantidad-botones [data-id="${id}"]`)?.closest(".producto-cantidad-botones");
+  if (!fila) return;
+  const btnRestar = fila.querySelector('[data-accion="restar"]');
+  const qtyValor = fila.querySelector(".qty-valor");
+  btnRestar.disabled = cantidad <= 0;
+  qtyValor.textContent = cantidad > 0 ? formatoCantidad(producto, cantidad) : "—";
+}
+
 function renderProductos() {
   const hayBusqueda = !!(inputBuscar.value || "").trim();
   const texto = slugify(inputBuscar.value || "");
@@ -694,7 +703,7 @@ function renderProductos() {
       if (nuevo === 0) delete carrito[id];
       else carrito[id] = nuevo;
       guardarCarrito();
-      renderProductos();
+      actualizarFilaCantidad(id, producto, nuevo);
       actualizarBarraCarrito();
     });
   });
