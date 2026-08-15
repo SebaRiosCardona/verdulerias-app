@@ -8,6 +8,10 @@ import {
   query, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
+// para evitar que el navegador siga mostrando la versión vieja cacheada.
+const VERSION_IMAGENES = 2;
+
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
 // ---------------------------------------------------------------
@@ -750,7 +754,8 @@ function renderFilaProducto(p) {
     </details>
   ` : `<div class="texto-paso-fijo">x ${textoPasoFijo(p)}</div>`;
 
-  const estiloImagen = p.imagenUrl ? ` style="background-image:url('${p.imagenUrl.replace(/'/g, "%27")}')"` : "";
+  const urlImagen = p.imagenUrl && !/^https?:\/\//.test(p.imagenUrl) ? `${p.imagenUrl}?v=${VERSION_IMAGENES}` : p.imagenUrl;
+  const estiloImagen = urlImagen ? ` style="background-image:url('${urlImagen.replace(/'/g, "%27")}')"` : "";
 
   return `
     <div class="producto${p.imagenUrl ? " producto-con-imagen" : ""}"${estiloImagen}>
