@@ -10,7 +10,7 @@ import {
 
 // Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
 // para evitar que el navegador siga mostrando la versión vieja cacheada.
-const VERSION_IMAGENES = 9;
+const VERSION_IMAGENES = 10;
 
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
@@ -218,6 +218,11 @@ function mostrarAviso(mensaje) {
 }
 
 modalAvisoOk.addEventListener("click", () => modalAviso.classList.add("oculto"));
+
+const modalImagenProducto = el("modal-imagen-producto");
+const modalImagenProductoImg = el("modal-imagen-producto-img");
+
+modalImagenProducto.addEventListener("click", () => modalImagenProducto.classList.add("oculto"));
 
 const pantallaCarga = el("pantalla-carga");
 const spinnerCarga = el("spinner-carga");
@@ -689,6 +694,14 @@ function renderProductos() {
     });
   });
 
+  listaProductos.querySelectorAll(".producto-miniatura-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      modalImagenProductoImg.src = btn.dataset.imagen;
+      modalImagenProductoImg.alt = btn.dataset.nombre;
+      modalImagenProducto.classList.remove("oculto");
+    });
+  });
+
   // Listeners de +/-
   listaProductos.querySelectorAll("[data-accion]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -763,14 +776,25 @@ function renderFilaProducto(p) {
     </details>
   ` : `<div class="texto-paso-fijo">x ${textoPasoFijo(p)}</div>`;
 
-  const urlImagen = p.imagenUrl && !/^https?:\/\//.test(p.imagenUrl) ? `${p.imagenUrl}?v=${VERSION_IMAGENES}` : p.imagenUrl;
+  const urlImagenFondo = p.imagenFondoUrl && !/^https?:\/\//.test(p.imagenFondoUrl) ? `${p.imagenFondoUrl}?v=${VERSION_IMAGENES}` : p.imagenFondoUrl;
+  const urlImagenMiniatura = p.imagenUrl && !/^https?:\/\//.test(p.imagenUrl) ? `${p.imagenUrl}?v=${VERSION_IMAGENES}` : p.imagenUrl;
   const posicionImagen = p.imagenPosicion || "center";
   const posicionImagenH = p.imagenPosicionH || "center";
-  const estiloImagen = urlImagen ? ` style="background-image:url('${urlImagen.replace(/'/g, "%27")}');background-position:${posicionImagenH} ${posicionImagen}"` : "";
+
+  const usarMiniatura = tiendaId === "demo";
+
+  const estiloImagen = urlImagenFondo ? ` style="background-image:url('${urlImagenFondo.replace(/'/g, "%27")}');background-position:${posicionImagenH} ${posicionImagen}"` : "";
+
+  const miniatura = usarMiniatura && urlImagenMiniatura ? `
+    <button type="button" class="producto-miniatura-btn" data-imagen="${urlImagenMiniatura.replace(/"/g, "%22")}" data-nombre="${p.nombre.replace(/"/g, "&quot;")}">
+      <img class="producto-miniatura" src="${urlImagenMiniatura}" alt="${p.nombre}" style="object-position:${posicionImagenH} ${posicionImagen}" />
+    </button>
+  ` : "";
 
   return `
-    <div class="producto${p.imagenUrl ? " producto-con-imagen" : ""}"${estiloImagen}>
+    <div class="producto${p.imagenFondoUrl ? " producto-con-imagen" : ""}"${estiloImagen}>
       <div class="producto-fila">
+        ${miniatura}
         <div class="producto-info">
           <div class="producto-nombre">${p.nombre}</div>
           <div class="producto-precio">${formatoMoneda(p.precioPorKg / factorConversionPrecio(unidadVenta))} ${sufijoPrecioDe(unidadVenta)}${p.pesoAproximadoGramos ? ` (aprox. ${textoPesoAproximado(p.pesoAproximadoGramos)})` : ""}</div>
