@@ -694,6 +694,34 @@ main {
   font-size: 14px;
   margin-bottom: 10px;
 }
+.pedido-item-fila-editable {
+  align-items: center;
+  gap: 8px;
+}
+.pedido-item-fila-editable > span {
+  flex: 1;
+}
+.pedido-item-fila-derecha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-quitar-item {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--gris-claro);
+  background: #fff;
+  color: var(--rojo);
+  font-size: 12px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
 .modal-confirmar-totales {
   border-top: 1px solid var(--gris-claro);
   padding-top: 10px;

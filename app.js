@@ -842,15 +842,38 @@ btnConfirmar.addEventListener("click", () => {
   abrirModalConfirmarPedido(resumen);
 });
 
+function renderModalConfirmarItems(resumen) {
+  modalConfirmarItems.innerHTML = resumen.items.map((it) => `
+    <div class="pedido-item-fila pedido-item-fila-editable">
+      <span>${it.nombre} — ${formatoCantidad(it, it.kg)}</span>
+      <div class="pedido-item-fila-derecha">
+        <span>${formatoMoneda(it.subtotal)}</span>
+        <button type="button" class="btn-quitar-item" data-id="${it.productoId}" aria-label="Quitar producto">✕</button>
+      </div>
+    </div>
+  `).join("");
+
+  modalConfirmarItems.querySelectorAll(".btn-quitar-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      delete carrito[btn.dataset.id];
+      guardarCarrito();
+      const nuevoResumen = calcularCarrito();
+      if (nuevoResumen.items.length === 0) {
+        modalConfirmarPedido.classList.add("oculto");
+      }
+      resumenActual = nuevoResumen;
+      renderModalConfirmarItems(nuevoResumen);
+      renderTotalesModal();
+      renderProductos();
+      actualizarBarraCarrito();
+    });
+  });
+}
+
 function abrirModalConfirmarPedido(resumen) {
   resumenActual = resumen;
 
-  modalConfirmarItems.innerHTML = resumen.items.map((it) => `
-    <div class="pedido-item-fila">
-      <span>${it.nombre} — ${formatoCantidad(it, it.kg)}</span>
-      <span>${formatoMoneda(it.subtotal)}</span>
-    </div>
-  `).join("");
+  renderModalConfirmarItems(resumen);
 
   momentoSeleccionado = null;
   botonesMomento.forEach((b) => b.classList.remove("activo"));
