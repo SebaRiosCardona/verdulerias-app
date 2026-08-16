@@ -293,6 +293,12 @@ header .subtitulo {
   border-radius: 999px;
   white-space: nowrap;
   cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.categoria-nav-pill.activo {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
 }
 
 /* ---------- Catálogo ---------- */

@@ -10,7 +10,7 @@ import {
 
 // Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
 // para evitar que el navegador siga mostrando la versión vieja cacheada.
-const VERSION_IMAGENES = 14;
+const VERSION_IMAGENES = 16;
 
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
@@ -612,6 +612,8 @@ document.addEventListener("click", (ev) => {
   });
 });
 
+let observadorCategorias = null;
+
 function renderCategoriasNav(categoriasPresentes) {
   if (!categoriasNav) return;
   if (categoriasPresentes.length <= 1) {
@@ -636,6 +638,35 @@ function renderCategoriasNav(categoriasPresentes) {
       const destino = detalle.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top: destino, behavior: "smooth" });
     });
+  });
+
+  observarCategoriasVisibles(categoriasPresentes);
+}
+
+function observarCategoriasVisibles(categoriasPresentes) {
+  if (observadorCategorias) observadorCategorias.disconnect();
+
+  const buscadorEl = document.querySelector(".buscador");
+  const offset = buscadorEl?.getBoundingClientRect().height || 0;
+
+  observadorCategorias = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const clave = entry.target.dataset.categoria;
+      const pill = categoriasNav.querySelector(`[data-ir-a="${clave}"]`);
+      if (!pill) return;
+      if (entry.isIntersecting) {
+        categoriasNav.querySelectorAll(".categoria-nav-pill").forEach((p) => p.classList.remove("activo"));
+        pill.classList.add("activo");
+      }
+    });
+  }, {
+    rootMargin: `-${offset + 1}px 0px -70% 0px`,
+    threshold: 0,
+  });
+
+  categoriasPresentes.forEach(({ clave }) => {
+    const detalle = document.getElementById(`categoria-${clave}`);
+    if (detalle) observadorCategorias.observe(detalle);
   });
 }
 
