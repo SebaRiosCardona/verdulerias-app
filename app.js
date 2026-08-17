@@ -10,7 +10,7 @@ import {
 
 // Se incrementa manualmente cada vez que se reemplaza una imagen de producto,
 // para evitar que el navegador siga mostrando la versión vieja cacheada.
-const VERSION_IMAGENES = 19;
+const VERSION_IMAGENES = 20;
 
 // ---------------------------------------------------------------
 // Reglas de negocio del descuento
@@ -812,7 +812,7 @@ function renderFilaProducto(p) {
   const posicionImagen = p.imagenPosicion || "center";
   const posicionImagenH = p.imagenPosicionH || "center";
 
-  const usarMiniatura = tiendaId === "demo";
+  const usarMiniatura = tiendaId === "demo" || tiendaId === "vida-verde";
 
   const estiloImagen = urlImagenFondo ? ` style="background-image:url('${urlImagenFondo.replace(/'/g, "%27")}');background-position:${posicionImagenH} ${posicionImagen}"` : "";
 
