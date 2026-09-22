@@ -214,6 +214,14 @@ header .subtitulo {
   border-radius: 10px;
   border: 1px solid var(--gris-claro);
 }
+.card-login input.campo-error {
+  border-color: var(--rojo);
+}
+.error-campo {
+  color: var(--rojo);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
 .card-login .btn-toggle-password {
   position: absolute;
   right: 8px;

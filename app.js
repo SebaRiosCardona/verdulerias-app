@@ -536,12 +536,26 @@ function mostrarLogin() {
   vistaMisCompras.classList.add("oculto");
 }
 
+const errorLogin = el("error-login");
+
+[inputNombre, inputApellido].forEach((input) => {
+  input.addEventListener("input", () => {
+    input.classList.remove("campo-error");
+    errorLogin.classList.add("oculto");
+  });
+});
+
 formLogin.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const nombre = inputNombre.value.trim();
   const apellido = inputApellido.value.trim();
   if (!nombre || !apellido) {
-    alert("Completá tu nombre y apellido para continuar.");
+    inputNombre.classList.toggle("campo-error", !nombre);
+    inputApellido.classList.toggle("campo-error", !apellido);
+    if (!nombre && !apellido) errorLogin.textContent = "Completá tu nombre y apellido para continuar.";
+    else if (!nombre) errorLogin.textContent = "Completá tu nombre para continuar.";
+    else errorLogin.textContent = "Completá tu apellido para continuar.";
+    errorLogin.classList.remove("oculto");
     return;
   }
 
