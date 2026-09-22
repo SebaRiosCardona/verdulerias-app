@@ -255,7 +255,7 @@ const barraKg = el("barra-kg");
 const barraTotal = el("barra-total");
 const btnConfirmar = el("btn-confirmar");
 
-const btnVerCompras = el("btn-ver-compras");
+const btnLimpiarCarrito = el("btn-limpiar-carrito");
 const btnVolverCatalogo = el("btn-volver-catalogo");
 const btnSalir = el("btn-salir");
 const btnSalir2 = el("btn-salir-2");
@@ -607,7 +607,28 @@ function mostrarCatalogo() {
   actualizarBarraCarrito();
 }
 
-btnVerCompras.addEventListener("click", () => mostrarMisCompras());
+const modalLimpiarCarrito = el("modal-limpiar-carrito");
+
+btnLimpiarCarrito.addEventListener("click", () => {
+  if (Object.keys(carrito).length === 0) return;
+  modalLimpiarCarrito.classList.remove("oculto");
+});
+
+el("modal-limpiar-carrito-cancelar").addEventListener("click", () => {
+  modalLimpiarCarrito.classList.add("oculto");
+});
+
+el("modal-limpiar-carrito-confirmar").addEventListener("click", () => {
+  const idsCargados = Object.keys(carrito);
+  carrito = {};
+  localStorage.removeItem(CLAVE_CARRITO);
+  idsCargados.forEach((id) => {
+    const producto = productos.find((x) => x.id === id);
+    if (producto) actualizarFilaCantidad(id, producto, 0);
+  });
+  actualizarBarraCarrito();
+  modalLimpiarCarrito.classList.add("oculto");
+});
 btnVolverCatalogo.addEventListener("click", () => mostrarCatalogo());
 
 inputBuscar.addEventListener("input", () => renderProductos());
@@ -932,6 +953,7 @@ function actualizarBarraCarrito() {
   barraKg.textContent = formatoKg(pesoTotalKg);
   barraTotal.textContent = formatoMoneda(total);
   btnConfirmar.disabled = items.length === 0;
+  btnLimpiarCarrito.disabled = items.length === 0;
 }
 
 btnConfirmar.addEventListener("click", () => {

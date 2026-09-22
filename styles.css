@@ -149,7 +149,7 @@ header .subtitulo {
   font-size: 12px;
   opacity: .85;
 }
-#btn-salir, #btn-salir-2, #btn-ver-compras, #btn-volver-catalogo, #btn-salir-admin, #btn-salir-superadmin {
+#btn-salir, #btn-salir-2, #btn-limpiar-carrito, #btn-volver-catalogo, #btn-salir-admin, #btn-salir-superadmin {
   background: rgba(255,255,255,.18);
   color: #fff;
   border: none;
@@ -157,6 +157,10 @@ header .subtitulo {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
+}
+#btn-limpiar-carrito:disabled {
+  opacity: .45;
+  cursor: default;
 }
 
 /* ---------- Login ---------- */

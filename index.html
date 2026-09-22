@@ -78,7 +78,7 @@
         <div class="subtitulo" id="saludo-cliente"></div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button id="btn-ver-compras" class="oculto">Mis Compras</button>
+        <button id="btn-limpiar-carrito">Limpiar carrito</button>
         <button id="btn-salir">Salir</button>
       </div>
     </header>
@@ -178,6 +178,17 @@
     <div class="modal-aviso">
       <p id="modal-aviso-texto"></p>
       <button type="button" id="modal-aviso-ok" class="btn-modal-enviar">Entendido</button>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación para vaciar el carrito -->
+  <div id="modal-limpiar-carrito" class="modal-overlay oculto">
+    <div class="modal-aviso">
+      <p>¿Seguro que querés vaciar tu carrito? Se van a borrar todos los productos que agregaste.</p>
+      <div class="modal-confirmar-acciones">
+        <button type="button" id="modal-limpiar-carrito-cancelar" class="btn-modal-cancelar">Cancelar</button>
+        <button type="button" id="modal-limpiar-carrito-confirmar" class="btn-modal-enviar">Vaciar</button>
+      </div>
     </div>
   </div>
 
