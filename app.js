@@ -540,7 +540,10 @@ formLogin.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const nombre = inputNombre.value.trim();
   const apellido = inputApellido.value.trim();
-  if (!nombre || !apellido) return;
+  if (!nombre || !apellido) {
+    alert("Completá tu nombre y apellido para continuar.");
+    return;
+  }
 
   const clienteId = slugify(`${nombre}-${apellido}`);
   const clienteRef = doc(db, "verdulerias", tiendaId, "clientes", clienteId);
