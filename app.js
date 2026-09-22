@@ -248,22 +248,6 @@ const inputBuscar = el("input-buscar");
 const listaProductos = el("lista-productos");
 const categoriasNav = el("categorias-nav");
 
-const headerCatalogo = el("header-catalogo");
-let ultimoScrollY = window.scrollY;
-window.addEventListener("scroll", () => {
-  if (!headerCatalogo || vistaCatalogo.classList.contains("oculto")) return;
-  const scrollActual = window.scrollY;
-  const diferencia = scrollActual - ultimoScrollY;
-  if (scrollActual < 80) {
-    headerCatalogo.classList.remove("header-oculto");
-  } else if (diferencia > 5) {
-    headerCatalogo.classList.add("header-oculto");
-  } else if (diferencia < -5) {
-    headerCatalogo.classList.remove("header-oculto");
-  }
-  ultimoScrollY = scrollActual;
-}, { passive: true });
-
 const barraDescuento = el("barra-descuento");
 const barraKg = el("barra-kg");
 const barraTotal = el("barra-total");
