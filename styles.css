@@ -71,26 +71,26 @@ button:active:not(:disabled) {
 @keyframes girar { to { transform: rotate(360deg); } }
 .pimentero-carga {
   position: relative;
-  width: 60px;
-  height: 90px;
+  width: 100px;
+  height: 150px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
 }
 .pimentero-emoji {
-  font-size: 46px;
-  transform: rotate(160deg);
+  font-size: 76px;
+  transform: rotate(170deg);
   animation: tambalear 1.4s ease-in-out infinite;
   line-height: 1;
 }
 @keyframes tambalear {
-  0%, 100% { transform: rotate(155deg); }
-  50% { transform: rotate(165deg); }
+  0%, 100% { transform: rotate(170deg); }
+  50% { transform: rotate(190deg); }
 }
 .pimentero-gotas {
   position: absolute;
-  top: 56px;
-  left: 60%;
+  top: 92px;
+  left: 52%;
   transform: translateX(-50%);
   display: flex;
   gap: 7px;
