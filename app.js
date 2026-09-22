@@ -78,6 +78,7 @@ function formatoFraccionable(c, etiquetaUnidad) {
   if (c === 0.5) return `1/2 ${etiquetaUnidad}`;
   if (c === 0.75) return `3/4 ${etiquetaUnidad}`;
   const entero = Math.round(c);
+  if (etiquetaUnidad === "Unid") return `${entero} Unid`;
   return `${entero} ${etiquetaUnidad}${entero === 1 ? "" : "s"}`;
 }
 
@@ -85,7 +86,7 @@ const UNIDADES_VENTA = {
   kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   medio_kg: { paso: 0.5, formato: (c) => formatoKg(c), kgPorUnidad: 1 },
   "100g": { paso: 0.1, formato: (c) => c < 1 ? formatoGramos(c) : formatoKg(c), kgPorUnidad: 1 },
-  unidad: { paso: 1, formato: (c) => `${Math.round(c)} u.`, kgPorUnidad: 0.5 },
+  unidad: { paso: 1, formato: (c) => `${Math.round(c)} Unid`, kgPorUnidad: 0.5 },
   atado: { paso: 1, formato: (c) => `${Math.round(c)} atado${Math.round(c) === 1 ? "" : "s"}`, kgPorUnidad: 0.5 },
   bolsa: { paso: 1, formato: (c) => `${Math.round(c)} bolsa${Math.round(c) === 1 ? "" : "s"}`, kgPorUnidad: 0.5 },
 };
@@ -133,7 +134,7 @@ function textoPasoFijo(producto) {
 }
 
 function formatoCantidad(producto, cantidad) {
-  if (esFraccionable(producto)) return formatoFraccionable(cantidad, producto.unidadVenta === "atado" ? "atado" : "unidad");
+  if (esFraccionable(producto)) return formatoFraccionable(cantidad, producto.unidadVenta === "atado" ? "atado" : "Unid");
   return unidadDe(producto).formato(cantidad);
 }
 
@@ -246,6 +247,22 @@ const saludoClienteCompras = el("saludo-cliente-compras");
 const inputBuscar = el("input-buscar");
 const listaProductos = el("lista-productos");
 const categoriasNav = el("categorias-nav");
+
+const headerCatalogo = el("header-catalogo");
+let ultimoScrollY = window.scrollY;
+window.addEventListener("scroll", () => {
+  if (!headerCatalogo || vistaCatalogo.classList.contains("oculto")) return;
+  const scrollActual = window.scrollY;
+  const diferencia = scrollActual - ultimoScrollY;
+  if (scrollActual < 80) {
+    headerCatalogo.classList.remove("header-oculto");
+  } else if (diferencia > 5) {
+    headerCatalogo.classList.add("header-oculto");
+  } else if (diferencia < -5) {
+    headerCatalogo.classList.remove("header-oculto");
+  }
+  ultimoScrollY = scrollActual;
+}, { passive: true });
 
 const barraDescuento = el("barra-descuento");
 const barraKg = el("barra-kg");
@@ -790,10 +807,11 @@ const OPCIONES_PASO_KILO = [
 ];
 
 function opcionesPasoFraccionable(etiquetaUnidad) {
+  const esUnidad = etiquetaUnidad === "unidad";
   return [
-    { valor: 0.25, etiqueta: `1/4 ${etiquetaUnidad}` },
-    { valor: 0.5, etiqueta: `1/2 ${etiquetaUnidad}` },
-    { valor: 1, etiqueta: etiquetaUnidad === "atado" ? "Atado" : "1 unidad" },
+    { valor: 0.25, etiqueta: esUnidad ? "1/4 Unid" : `1/4 ${etiquetaUnidad}` },
+    { valor: 0.5, etiqueta: esUnidad ? "1/2 Unid" : `1/2 ${etiquetaUnidad}` },
+    { valor: 1, etiqueta: etiquetaUnidad === "atado" ? "Atado" : "1 Unid" },
   ];
 }
 
