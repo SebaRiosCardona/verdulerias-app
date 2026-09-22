@@ -14,7 +14,14 @@
 
   <!-- Pantalla de carga -->
   <div id="pantalla-carga">
-    <div class="spinner" id="spinner-carga"></div>
+    <div class="pimentero-carga" id="spinner-carga">
+      <div class="pimentero-emoji">🧂</div>
+      <div class="pimentero-gotas">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
     <div id="error-carga" class="oculto">
       <p id="error-carga-texto"></p>
       <button id="btn-recargar">Recargar página</button>
@@ -71,7 +78,7 @@
         <div class="subtitulo" id="saludo-cliente"></div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button id="btn-ver-compras">Mis Compras</button>
+        <button id="btn-ver-compras" class="oculto">Mis Compras</button>
         <button id="btn-salir">Salir</button>
       </div>
     </header>

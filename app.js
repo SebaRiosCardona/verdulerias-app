@@ -129,7 +129,9 @@ function esUnidadEntera(unidadVenta) {
 function textoPasoFijo(producto) {
   const unidad = producto?.unidadVenta || "kg";
   if (unidad === "100g") return "100g";
-  if (esUnidadEntera(unidad)) return "1 unidad";
+  if (unidad === "atado") return "1 atado";
+  if (unidad === "bolsa") return "1 bolsa";
+  if (unidad === "unidad") return "1 Unid";
   return "500g";
 }
 

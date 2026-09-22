@@ -69,6 +69,48 @@ button:active:not(:disabled) {
   animation: girar 0.8s linear infinite;
 }
 @keyframes girar { to { transform: rotate(360deg); } }
+.pimentero-carga {
+  position: relative;
+  width: 60px;
+  height: 90px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.pimentero-emoji {
+  font-size: 46px;
+  transform: rotate(160deg);
+  animation: tambalear 1.4s ease-in-out infinite;
+  line-height: 1;
+}
+@keyframes tambalear {
+  0%, 100% { transform: rotate(155deg); }
+  50% { transform: rotate(165deg); }
+}
+.pimentero-gotas {
+  position: absolute;
+  top: 56px;
+  left: 60%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+}
+.pimentero-gotas span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0;
+  animation: caer 1.4s ease-in infinite;
+}
+.pimentero-gotas span:nth-child(2) { animation-delay: .18s; }
+.pimentero-gotas span:nth-child(3) { animation-delay: .36s; }
+@keyframes caer {
+  0% { opacity: 0; transform: translateY(0); }
+  15% { opacity: 1; }
+  80% { opacity: .7; }
+  100% { opacity: 0; transform: translateY(34px); }
+}
 #error-carga {
   background: rgba(0,0,0,.25);
   padding: 14px 18px;
