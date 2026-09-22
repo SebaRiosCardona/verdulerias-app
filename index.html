@@ -151,17 +151,20 @@
         <label>Utilizaremos esta ubicación para enviarte el pedido, ¡asegurate de marcarla bien!</label>
         <div id="mapa-direccion-cliente" class="mapa-contenedor"></div>
         <p id="direccion-sin-ubicacion-local" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:8px 0 0;">Este local todavía no tiene envío a domicilio configurado.</p>
+        <p id="error-mapa-cliente" class="error-campo oculto">Marcá tu ubicación en el mapa para continuar.</p>
         <label>Dirección <span class="campo-obligatorio">*</span></label>
         <div class="campo-direccion-con-boton">
-          <input id="direccion-calle" type="text" placeholder="Calle y número" />
+          <input id="direccion-calle" type="text" placeholder="Calle, número y barrio" />
           <button type="button" id="btn-buscar-direccion">Buscar en el mapa</button>
         </div>
         <p id="direccion-buscando" class="oculto" style="font-size:12.5px;color:var(--gris);margin:4px 0 0;">Buscando...</p>
         <p id="direccion-no-encontrada" class="oculto" style="font-size:12.5px;color:var(--rojo);margin:4px 0 0;">No encontramos esa dirección. Marcá tu ubicación directamente en el mapa.</p>
+        <p id="error-direccion-calle" class="error-campo oculto">Completá la dirección de entrega para continuar.</p>
         <label>Piso / depto (opcional)</label>
         <input id="direccion-piso" type="text" />
         <label>Teléfono de contacto <span class="campo-obligatorio">*</span></label>
         <input id="direccion-telefono" type="tel" />
+        <p id="error-direccion-telefono" class="error-campo oculto">Completá el número de contacto para continuar.</p>
         <label>Notas para el repartidor (opcional)</label>
         <input id="direccion-notas" type="text" placeholder="Ej: timbre no funciona, dejar en portería" />
         <div id="modal-confirmar-totales-envio" class="modal-confirmar-totales"></div>

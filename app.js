@@ -317,6 +317,8 @@ function distanciaKm(a, b) {
 
 function ubicarPinCliente(latlng, zoom) {
   pinClienteActual = { lat: latlng.lat, lng: latlng.lng };
+  el("mapa-direccion-cliente").classList.remove("campo-error");
+  el("error-mapa-cliente").classList.add("oculto");
   if (markerCliente) {
     markerCliente.setLatLng(latlng);
   } else {
@@ -383,6 +385,8 @@ async function buscarDireccionInversa(latlng) {
     const calle = [direccion.road, direccion.house_number].filter(Boolean).join(" ");
     if (calle) {
       el("direccion-calle").value = calle;
+      el("direccion-calle").classList.remove("campo-error");
+      el("error-direccion-calle").classList.add("oculto");
     }
   } catch (e) {
     // si falla, el cliente puede seguir escribiendo la dirección a mano
@@ -545,6 +549,15 @@ const errorLogin = el("error-login");
     input.classList.remove("campo-error");
     errorLogin.classList.add("oculto");
   });
+});
+
+el("direccion-calle").addEventListener("input", () => {
+  el("direccion-calle").classList.remove("campo-error");
+  el("error-direccion-calle").classList.add("oculto");
+});
+el("direccion-telefono").addEventListener("input", () => {
+  el("direccion-telefono").classList.remove("campo-error");
+  el("error-direccion-telefono").classList.add("oculto");
 });
 
 formLogin.addEventListener("submit", async (ev) => {
@@ -975,7 +988,9 @@ function renderModalConfirmarItems(resumen) {
 
   modalConfirmarItems.querySelectorAll(".btn-quitar-item").forEach((btn) => {
     btn.addEventListener("click", () => {
-      delete carrito[btn.dataset.id];
+      const id = btn.dataset.id;
+      const producto = productos.find((x) => x.id === id);
+      delete carrito[id];
       guardarCarrito();
       const nuevoResumen = calcularCarrito();
       if (nuevoResumen.items.length === 0) {
@@ -984,7 +999,7 @@ function renderModalConfirmarItems(resumen) {
       resumenActual = nuevoResumen;
       renderModalConfirmarItems(nuevoResumen);
       renderTotalesModal();
-      renderProductos();
+      if (producto) actualizarFilaCantidad(id, producto, 0);
       actualizarBarraCarrito();
     });
   });
@@ -1028,6 +1043,12 @@ function abrirModalConfirmarPedido(resumen) {
   el("direccion-notas").value = "";
   el("direccion-buscando").classList.add("oculto");
   el("direccion-no-encontrada").classList.add("oculto");
+  el("direccion-calle").classList.remove("campo-error");
+  el("direccion-telefono").classList.remove("campo-error");
+  el("error-direccion-calle").classList.add("oculto");
+  el("error-direccion-telefono").classList.add("oculto");
+  el("mapa-direccion-cliente").classList.remove("campo-error");
+  el("error-mapa-cliente").classList.add("oculto");
 
   renderTotalesModal();
 
@@ -1050,16 +1071,17 @@ function abrirModalConfirmarPedido(resumen) {
         mostrarAviso("Este local todavía no tiene envío a domicilio configurado.");
         return;
       }
-      if (!pinClienteActual) {
-        mostrarAviso("Marcá tu ubicación en el mapa.");
-        return;
-      }
-      const direccion = el("direccion-calle").value.trim();
-      const telefono = el("direccion-telefono").value.trim();
-      if (!direccion || !telefono) {
-        mostrarAviso("Completá los datos de entrega.");
-        return;
-      }
+      el("mapa-direccion-cliente").classList.toggle("campo-error", !pinClienteActual);
+      el("error-mapa-cliente").classList.toggle("oculto", !!pinClienteActual);
+      const inputDireccionCalle = el("direccion-calle");
+      const inputDireccionTelefono = el("direccion-telefono");
+      const direccion = inputDireccionCalle.value.trim();
+      const telefono = inputDireccionTelefono.value.trim();
+      inputDireccionCalle.classList.toggle("campo-error", !direccion);
+      inputDireccionTelefono.classList.toggle("campo-error", !telefono);
+      el("error-direccion-calle").classList.toggle("oculto", !!direccion);
+      el("error-direccion-telefono").classList.toggle("oculto", !!telefono);
+      if (!pinClienteActual || !direccion || !telefono) return;
     }
     enviarPedido(resumen);
   };

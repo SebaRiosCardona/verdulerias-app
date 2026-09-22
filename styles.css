@@ -260,7 +260,8 @@ header .subtitulo {
   border-radius: 10px;
   border: 1px solid var(--gris-claro);
 }
-.card-login input.campo-error {
+.card-login input.campo-error,
+input.campo-error {
   border-color: var(--rojo);
 }
 .error-campo {
@@ -931,6 +932,9 @@ main {
   font-family: inherit;
   font-size: 14px;
 }
+.modal-confirmar-direccion input.campo-error {
+  border-color: var(--rojo);
+}
 .campo-direccion-con-boton {
   display: flex;
   gap: 6px;
@@ -964,6 +968,9 @@ main {
   border-radius: 10px;
   border: 1px solid var(--gris-claro);
   overflow: hidden;
+}
+.mapa-contenedor.campo-error {
+  border-color: var(--rojo);
 }
 .modal-confirmar-acciones {
   display: flex;
