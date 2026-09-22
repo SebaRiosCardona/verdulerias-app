@@ -679,6 +679,19 @@ function actualizarFilaCantidad(id, producto, cantidad) {
   qtyValor.textContent = cantidad > 0 ? formatoCantidad(producto, cantidad) : "—";
 }
 
+function actualizarFilaSelectorPaso(id, producto, opcionesPaso) {
+  const detalle = listaProductos.querySelector(`.detalle-selector-paso[data-id="${id}"]`);
+  if (!detalle) return;
+  const opcionActual = opcionesPaso.find((op) => op.valor === pasosSeleccionados[id]);
+  detalle.querySelector("summary").textContent = `x ${opcionActual.etiqueta}`;
+  detalle.querySelectorAll(".paso-opcion").forEach((btn) => {
+    btn.classList.toggle("activo", parseFloat(btn.dataset.pasoValor) === pasosSeleccionados[id]);
+  });
+  detalle.open = false;
+  selectoresPasoAbiertos[id] = false;
+  actualizarFilaCantidad(id, producto, carrito[id] || 0);
+}
+
 function renderProductos() {
   const hayBusqueda = !!(inputBuscar.value || "").trim();
   const texto = slugify(inputBuscar.value || "");
@@ -762,7 +775,8 @@ function renderProductos() {
         guardarCarrito();
       }
       pasosSeleccionados[id] = nuevoPaso;
-      renderProductos();
+      const producto = productos.find((x) => x.id === id);
+      actualizarFilaSelectorPaso(id, producto, opcionesPasoDe(producto));
       actualizarBarraCarrito();
     });
   });
@@ -781,6 +795,14 @@ function opcionesPasoFraccionable(etiquetaUnidad) {
     { valor: 0.5, etiqueta: `1/2 ${etiquetaUnidad}` },
     { valor: 1, etiqueta: etiquetaUnidad === "atado" ? "Atado" : "1 unidad" },
   ];
+}
+
+function opcionesPasoDe(p) {
+  const unidadVenta = p.unidadVenta || "kg";
+  const fraccionable = esFraccionable(p);
+  const tieneSelectorPaso = !esCategoriaBolson(p.categoria) && (fraccionable || !esUnidadEntera(unidadVenta));
+  if (!tieneSelectorPaso) return null;
+  return fraccionable ? opcionesPasoFraccionable(unidadVenta === "atado" ? "atado" : "unidad") : OPCIONES_PASO_KILO;
 }
 
 function renderFilaProducto(p) {
