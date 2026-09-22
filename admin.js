@@ -544,6 +544,7 @@ function renderTabConfiguracion() {
 let filtroTextoProducto = "";
 let productoEnEdicion = null;
 let categoriasAdminAbiertas = {};
+let observadorCategoriasAdmin = null;
 
 const UNIDADES_VENTA = {
   kg: { etiqueta: "Kilo", etiquetaCorta: "kg", precioLabel: "Precio por kg", sufijoPrecio: "/ kg", paso: 0.5 },
@@ -915,6 +916,66 @@ function claveCategoriaAdmin(p) {
   return "verduleria";
 }
 
+function renderCategoriasNavAdmin(categoriasPresentes) {
+  const categoriasNav = el("categorias-nav-admin");
+  if (!categoriasNav) return;
+
+  const buscadorProductosAdmin = document.querySelector(".buscador-productos-admin");
+  const headerEl = document.querySelector("header");
+  const tabsEl = document.querySelector(".tabs");
+  if (buscadorProductosAdmin && headerEl && tabsEl) {
+    buscadorProductosAdmin.style.top = `${headerEl.offsetHeight + tabsEl.offsetHeight}px`;
+  }
+  if (categoriasPresentes.length <= 1) {
+    categoriasNav.innerHTML = "";
+    return;
+  }
+  categoriasNav.innerHTML = categoriasPresentes.map(({ clave, titulo }) => `
+    <button type="button" class="categoria-nav-pill" data-ir-a="${clave}">${titulo}</button>
+  `).join("");
+
+  categoriasNav.querySelectorAll("[data-ir-a]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const clave = btn.dataset.irA;
+      const detalle = document.getElementById(`categoria-admin-${clave}`);
+      if (!detalle) return;
+      if (!detalle.open) {
+        detalle.open = true;
+        categoriasAdminAbiertas[clave] = true;
+      }
+      const buscadorEl = document.querySelector(".buscador-productos-admin");
+      const offset = (buscadorEl?.getBoundingClientRect().bottom || 0) + 8;
+      const destino = detalle.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top: destino, behavior: "smooth" });
+    });
+  });
+
+  if (observadorCategoriasAdmin) observadorCategoriasAdmin.disconnect();
+
+  const buscadorEl = document.querySelector(".buscador-productos-admin");
+  const offset = buscadorEl?.getBoundingClientRect().height || 0;
+
+  observadorCategoriasAdmin = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const clave = entry.target.dataset.categoria;
+      const pill = categoriasNav.querySelector(`[data-ir-a="${clave}"]`);
+      if (!pill) return;
+      if (entry.isIntersecting) {
+        categoriasNav.querySelectorAll(".categoria-nav-pill").forEach((p) => p.classList.remove("activo"));
+        pill.classList.add("activo");
+      }
+    });
+  }, {
+    rootMargin: `-${offset + 1}px 0px -70% 0px`,
+    threshold: 0,
+  });
+
+  categoriasPresentes.forEach(({ clave }) => {
+    const detalle = document.getElementById(`categoria-admin-${clave}`);
+    if (detalle) observadorCategoriasAdmin.observe(detalle);
+  });
+}
+
 function renderListaProductosAdmin() {
   const contenedor = el("lista-productos-admin");
 
@@ -957,11 +1018,12 @@ function renderListaProductosAdmin() {
   `;
   };
 
-  contenedor.innerHTML = CATEGORIAS_ADMIN.map(({ clave, titulo }) => {
-    if (!grupos[clave].length) return "";
+  const categoriasPresentes = CATEGORIAS_ADMIN.filter(({ clave }) => grupos[clave].length > 0);
+
+  contenedor.innerHTML = categoriasPresentes.map(({ clave, titulo }) => {
     const abierto = hayFiltro || categoriasAdminAbiertas[clave] !== false;
     return `
-      <details class="categoria-grupo-admin" data-categoria="${clave}" ${abierto ? "open" : ""}>
+      <details class="categoria-grupo-admin" id="categoria-admin-${clave}" data-categoria="${clave}" ${abierto ? "open" : ""}>
         <summary class="categoria-titulo-admin">${titulo}<span class="categoria-flecha">▾</span></summary>
         <div>${grupos[clave].map(filaProducto).join("")}</div>
       </details>
@@ -973,6 +1035,8 @@ function renderListaProductosAdmin() {
       categoriasAdminAbiertas[detalle.dataset.categoria] = detalle.open;
     });
   });
+
+  renderCategoriasNavAdmin(categoriasPresentes);
 
   contenedor.querySelectorAll(".producto-admin").forEach((row) => {
     const id = row.dataset.id;

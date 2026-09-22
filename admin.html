@@ -86,19 +86,22 @@
       <!-- Tab Productos -->
       <section id="tab-productos">
         <button class="btn-agregar-producto-nuevo" id="btn-abrir-modal-producto">+ Agregar producto</button>
-        <div class="buscador-cliente" style="margin-bottom:12px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input id="input-buscar-producto" type="text" placeholder="Buscar fruta o verdura..." />
+        <div class="buscador-productos-admin">
+          <div class="buscador-cliente buscador-cliente-contorno">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="input-buscar-producto" type="text" placeholder="Buscar fruta o verdura..." />
+          </div>
+          <div id="categorias-nav-admin" class="categorias-nav categorias-nav-admin"></div>
         </div>
         <div id="lista-productos-admin"></div>
       </section>
 
       <!-- Tab Configuración -->
       <section id="tab-configuracion" class="oculto">
-        <details class="form-nuevo-producto detalle-config" open>
+        <details class="form-nuevo-producto detalle-config">
           <summary>Datos de la tienda</summary>
           <div class="detalle-config-contenido">
             <label>Teléfono de contacto (WhatsApp)</label>
@@ -108,7 +111,7 @@
             <button id="btn-guardar-telefono">Guardar datos</button>
           </div>
         </details>
-        <details id="detalle-envio-domicilio" class="form-nuevo-producto detalle-config" open>
+        <details id="detalle-envio-domicilio" class="form-nuevo-producto detalle-config">
           <summary>Envío a domicilio</summary>
           <div class="detalle-config-contenido">
             <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Marcá la ubicación de tu local. El costo de envío se calcula según la distancia hasta la casa del cliente.</p>
@@ -128,7 +131,7 @@
             <button id="btn-guardar-envio">Guardar envío</button>
           </div>
         </details>
-        <details class="form-nuevo-producto detalle-config" open>
+        <details class="form-nuevo-producto detalle-config">
           <summary>Descuento por monto mínimo</summary>
           <div class="detalle-config-contenido">
             <p style="font-size:12.5px;color:var(--gris);margin:6px 0 10px;">Definí a partir de qué monto de compra se aplica un descuento automático.</p>

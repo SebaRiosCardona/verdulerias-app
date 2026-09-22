@@ -336,6 +336,23 @@ main {
 }
 .categoria-grupo-admin {
   margin-bottom: 4px;
+  scroll-margin-top: 150px;
+}
+.buscador-productos-admin {
+  position: sticky;
+  top: 64px;
+  background: var(--crema);
+  padding: 10px 0;
+  margin: 0 -16px 12px;
+  z-index: 15;
+  border-bottom: 1px solid var(--gris-claro);
+}
+.buscador-productos-admin .buscador-cliente-contorno {
+  margin: 0 16px 10px;
+}
+.categorias-nav-admin {
+  max-width: none;
+  margin: 0 16px;
 }
 .categoria-titulo-admin {
   display: flex;
@@ -921,6 +938,8 @@ main {
 .buscador-cliente svg { flex-shrink:0; color:var(--gris); }
 .buscador-cliente input { border:none; border-bottom:1px solid transparent; outline:none; flex:1; background:transparent; font-size:14px; padding-bottom:2px; transition:border-color .15s ease; }
 .buscador-cliente input:focus { border-bottom-color: var(--verde); }
+.buscador-cliente-contorno { background:#fff; border:1px solid var(--gris-claro); padding:8px 12px; }
+.buscador-cliente-contorno input { border-bottom:none; padding-bottom:0; }
 .filtros-estado { display:flex; gap:8px; }
 .filtros-estado select { flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--gris-claro); background:#fff; font-size:13px; color:var(--texto); }
 .pedido-admin { background:#fff; border-radius:12px; padding:14px; margin-bottom:10px; box-shadow:0 4px 14px rgba(0,0,0,.16), 0 2px 5px rgba(0,0,0,.10); }
