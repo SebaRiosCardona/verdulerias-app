@@ -773,7 +773,8 @@ function renderTabProductos() {
 
   function actualizarVisibilidadAtadoFraccionable() {
     const unidad = el("np-unidad").value;
-    const aplica = unidad === "atado" || unidad === "unidad";
+    const esBolson = esCategoriaBolson(el("np-categoria").value);
+    const aplica = !esBolson && (unidad === "atado" || unidad === "unidad");
     el("np-atado-fraccionable-wrap").classList.toggle("oculto", !aplica);
     if (!aplica) el("np-atado-fraccionable").checked = false;
   }
@@ -803,12 +804,13 @@ function renderTabProductos() {
 
     if (esBolson) {
       el("np-unidad").value = "unidad";
-      el("np-precio-label").textContent = UNIDADES_VENTA.unidad.precioLabel;
+      el("np-precio-label").textContent = "Precio";
       el("np-nombre").value = NOMBRES_BOLSON[selectCategoria.value] || "";
       renderFilasContenidoBolson();
     } else {
-      el("np-unidad").value = "kg";
-      el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
+      const unidadDefecto = selectCategoria.value === "condimento" ? "unidad" : "kg";
+      el("np-unidad").value = unidadDefecto;
+      el("np-precio-label").textContent = UNIDADES_VENTA[unidadDefecto].precioLabel;
       el("np-nombre").value = "";
       el("np-nombre").placeholder = selectCategoria.value === "almacen" ? "Ej: Avena" : selectCategoria.value === "condimento" ? "Ej: Orégano" : "Ej: Banana, Zanahoria...";
     }
@@ -940,7 +942,7 @@ function abrirModalEditarProducto(producto) {
   if (esCategoriaBolson(producto.categoria)) renderFilasContenidoBolson();
   el("np-unidad").value = unidad;
   el("np-unidad").dataset.unidadPrevia = unidad;
-  el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
+  el("np-precio-label").textContent = esCategoriaBolson(producto.categoria) ? "Precio" : UNIDADES_VENTA[unidad].precioLabel;
   el("np-precio").value = formatoMiles(producto.precioPorKg / factorConversionPrecio(unidad));
   el("np-unidad").disabled = esCategoriaBolson(producto.categoria);
   el("np-unidad").classList.toggle("oculto", esCategoriaBolson(producto.categoria));
