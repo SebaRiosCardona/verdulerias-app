@@ -597,7 +597,7 @@ function productosDisponiblesParaBolson() {
   return productosCache.filter((p) => !esCategoriaBolson(p.categoria));
 }
 
-const PASO_BOLSON = { kg: 0.25, medio_kg: 0.25, "100g": 0.1, unidad: 1 };
+const PASO_BOLSON = { kg: 0.25, medio_kg: 0.25, "100g": 0.1, unidad: 1, atado: 1, bolsa: 1 };
 
 function valorSugeridoBolson() {
   const disponibles = productosDisponiblesParaBolson();
