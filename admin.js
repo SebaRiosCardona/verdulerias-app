@@ -565,8 +565,14 @@ function factorConversionPrecio(unidadVenta) {
 }
 
 function esCategoriaBolson(categoria) {
-  return categoria === "bolson";
+  return categoria === "bolson" || categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
 }
+
+const NOMBRES_BOLSON = {
+  bolson_verduras: "Bolsón Verduras",
+  bolson_frutas: "Bolsón Frutas",
+  bolson_mixto: "Bolsón Mixto",
+};
 
 function formatoCantidadItem(producto, cantidad) {
   if (esUnidadEntera(producto?.unidadVenta || "kg")) {
@@ -578,6 +584,14 @@ function formatoCantidadItem(producto, cantidad) {
 }
 
 let filasContenidoBolson = [];
+
+document.addEventListener("click", (ev) => {
+  document.querySelectorAll(".sugerencias-item-bolson:not(.oculto)").forEach((sugerenciasEl) => {
+    if (!sugerenciasEl.closest(".fila-item-bolson")?.contains(ev.target)) {
+      sugerenciasEl.classList.add("oculto");
+    }
+  });
+});
 
 function productosDisponiblesParaBolson() {
   return productosCache.filter((p) => !esCategoriaBolson(p.categoria));
@@ -620,7 +634,10 @@ function renderFilasContenidoBolson() {
     const unidadFila = UNIDADES_VENTA[productoFila?.unidadVenta || "kg"];
     return `
     <div class="fila-item-bolson" data-index="${index}">
-      <input type="text" list="lista-productos-bolson" data-campo="producto" placeholder="Buscar producto..." value="${productoFila?.nombre || ""}" autocomplete="off" />
+      <div class="buscador-item-bolson">
+        <input type="text" data-campo="producto" placeholder="Buscar producto..." value="${productoFila?.nombre || ""}" autocomplete="off" />
+        <div class="sugerencias-item-bolson oculto"></div>
+      </div>
       <div class="cantidad-item-bolson">
         <button type="button" class="btn-qty-bolson" data-accion="restar-item" ${fila.cantidad > 0 ? "" : "disabled"}>−</button>
         <span class="valor-qty-bolson">${fila.cantidad || 0}</span>
@@ -632,22 +649,45 @@ function renderFilasContenidoBolson() {
   `;
   }).join("");
 
-  const datalist = el("lista-productos-bolson");
-  if (datalist) {
-    datalist.innerHTML = disponibles.map((p) => `<option value="${p.nombre}">`).join("");
-  }
-
   contenedor.querySelectorAll(".fila-item-bolson").forEach((filaEl) => {
     const index = parseInt(filaEl.dataset.index);
 
     const inputProducto = filaEl.querySelector('[data-campo="producto"]');
-    inputProducto.addEventListener("input", (ev) => {
-      const nombreEscrito = ev.target.value.trim().toLowerCase();
-      const producto = disponibles.find((p) => p.nombre.toLowerCase() === nombreEscrito);
-      if (!producto) return;
+    const sugerenciasEl = filaEl.querySelector(".sugerencias-item-bolson");
+
+    const elegirProducto = (producto) => {
+      inputProducto.value = producto.nombre;
       filasContenidoBolson[index].productoId = producto.id;
       filasContenidoBolson[index].cantidad = 0;
       renderFilasContenidoBolson();
+    };
+
+    const mostrarSugerencias = (texto) => {
+      const query = slugify(texto);
+      const coincidencias = query ? disponibles.filter((p) => slugify(p.nombre).includes(query)) : [];
+      if (coincidencias.length === 0) {
+        sugerenciasEl.classList.add("oculto");
+        sugerenciasEl.innerHTML = "";
+        return;
+      }
+      sugerenciasEl.innerHTML = coincidencias.slice(0, 30).map((p) => `
+        <button type="button" class="sugerencia-item-bolson" data-id="${p.id}">${p.nombre}</button>
+      `).join("");
+      sugerenciasEl.classList.remove("oculto");
+      sugerenciasEl.querySelectorAll(".sugerencia-item-bolson").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const producto = disponibles.find((p) => p.id === btn.dataset.id);
+          if (producto) elegirProducto(producto);
+        });
+      });
+    };
+
+    inputProducto.addEventListener("input", (ev) => {
+      mostrarSugerencias(ev.target.value);
+    });
+
+    inputProducto.addEventListener("focus", (ev) => {
+      mostrarSugerencias(ev.target.value);
     });
 
     const productoFila = disponibles.find((p) => p.id === filasContenidoBolson[index].productoId);
@@ -764,8 +804,7 @@ function renderTabProductos() {
     if (esBolson) {
       el("np-unidad").value = "unidad";
       el("np-precio-label").textContent = UNIDADES_VENTA.unidad.precioLabel;
-      el("np-nombre").value = "";
-      el("np-nombre").placeholder = "Ej: Bolsón Frutero";
+      el("np-nombre").value = NOMBRES_BOLSON[selectCategoria.value] || "";
       renderFilasContenidoBolson();
     } else {
       el("np-unidad").value = "kg";
@@ -775,7 +814,12 @@ function renderTabProductos() {
     }
     el("np-unidad").dataset.unidadPrevia = el("np-unidad").value;
     el("np-unidad").disabled = esBolson;
-    el("np-nombre").disabled = false;
+    el("np-unidad").classList.toggle("oculto", esBolson);
+    el("np-unidad-label").classList.toggle("oculto", esBolson);
+    const nombreFijo = !!NOMBRES_BOLSON[selectCategoria.value];
+    el("np-nombre").disabled = nombreFijo;
+    el("np-nombre-label").classList.toggle("oculto", nombreFijo);
+    el("np-nombre").classList.toggle("oculto", nombreFijo);
     actualizarVisibilidadPesoAproximado();
     actualizarVisibilidadAtadoFraccionable();
     if (esBolson) el("np-peso-aproximado-wrap").classList.add("oculto");
@@ -792,6 +836,8 @@ function renderTabProductos() {
     el("btn-agregar-producto").textContent = "Agregar producto";
     el("np-nombre").value = "";
     el("np-nombre").disabled = false;
+    el("np-nombre").classList.remove("oculto");
+    el("np-nombre-label").classList.remove("oculto");
     el("np-imagen-url").value = "";
     el("np-imagen-fondo-url").value = "";
     el("np-imagen-posicion").value = "center";
@@ -801,6 +847,8 @@ function renderTabProductos() {
     el("np-unidad").value = "kg";
     el("np-unidad").dataset.unidadPrevia = "kg";
     el("np-unidad").disabled = false;
+    el("np-unidad").classList.remove("oculto");
+    el("np-unidad-label").classList.remove("oculto");
     el("np-precio-label").textContent = UNIDADES_VENTA.kg.precioLabel;
     el("np-precio").value = "";
     actualizarVisibilidadPesoAproximado();
@@ -818,11 +866,11 @@ function renderTabProductos() {
   };
 
   el("btn-agregar-producto").onclick = async () => {
-    const nombre = capitalizarPalabras(el("np-nombre").value.trim());
+    const categoria = el("np-categoria").value;
+    const nombre = NOMBRES_BOLSON[categoria] || capitalizarPalabras(el("np-nombre").value.trim());
     const imagenUrl = el("np-imagen-url").value.trim();
     const imagenFondoUrl = el("np-imagen-fondo-url").value.trim();
     const imagenPosicion = el("np-imagen-posicion").value;
-    const categoria = el("np-categoria").value;
     const esBolson = esCategoriaBolson(categoria);
     const contenido = esBolson ? contenidoBolsonATexto() : "";
     const contenidoItems = esBolson ? filasContenidoBolson.filter((f) => f.productoId && f.cantidad > 0) : [];
@@ -878,8 +926,11 @@ function abrirModalEditarProducto(producto) {
   const unidad = producto.unidadVenta || "kg";
   el("modal-producto-titulo").textContent = "Editar producto";
   el("btn-agregar-producto").textContent = "Guardar cambios";
+  const nombreFijo = !!NOMBRES_BOLSON[producto.categoria];
   el("np-nombre").value = producto.nombre;
-  el("np-nombre").disabled = false;
+  el("np-nombre").disabled = nombreFijo;
+  el("np-nombre").classList.toggle("oculto", nombreFijo);
+  el("np-nombre-label").classList.toggle("oculto", nombreFijo);
   el("np-imagen-url").value = producto.imagenUrl || "";
   el("np-imagen-fondo-url").value = producto.imagenFondoUrl || "";
   el("np-imagen-posicion").value = producto.imagenPosicion || "center";
@@ -892,6 +943,8 @@ function abrirModalEditarProducto(producto) {
   el("np-precio-label").textContent = UNIDADES_VENTA[unidad].precioLabel;
   el("np-precio").value = formatoMiles(producto.precioPorKg / factorConversionPrecio(unidad));
   el("np-unidad").disabled = esCategoriaBolson(producto.categoria);
+  el("np-unidad").classList.toggle("oculto", esCategoriaBolson(producto.categoria));
+  el("np-unidad-label").classList.toggle("oculto", esCategoriaBolson(producto.categoria));
   const aplicaPesoAproximado = !esCategoriaBolson(producto.categoria) && (unidad === "unidad" || unidad === "bolsa");
   el("np-peso-aproximado-wrap").classList.toggle("oculto", !aplicaPesoAproximado);
   el("np-peso-aproximado").value = aplicaPesoAproximado && producto.pesoAproximadoGramos ? producto.pesoAproximadoGramos : "";

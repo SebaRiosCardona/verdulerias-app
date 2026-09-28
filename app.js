@@ -653,7 +653,7 @@ btnVolverCatalogo.addEventListener("click", () => mostrarCatalogo());
 inputBuscar.addEventListener("input", () => renderProductos());
 
 function esCategoriaBolson(categoria) {
-  return categoria === "bolson";
+  return categoria === "bolson" || categoria === "bolson_verduras" || categoria === "bolson_frutas" || categoria === "bolson_mixto";
 }
 
 const CATEGORIAS_CATALOGO = [

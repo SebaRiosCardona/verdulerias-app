@@ -175,9 +175,11 @@
         <option value="verduleria">Verdulería</option>
         <option value="almacen">Almacén</option>
         <option value="condimento">Condimentos</option>
-        <option value="bolson">Bolsón</option>
+        <option value="bolson_verduras">Bolsón Verduras</option>
+        <option value="bolson_frutas">Bolsón Frutas</option>
+        <option value="bolson_mixto">Bolsón Mixto</option>
       </select>
-      <label>Nombre</label>
+      <label id="np-nombre-label">Nombre</label>
       <input id="np-nombre" type="text" placeholder="Ej: Zanahoria" />
       <input id="np-imagen-url" type="hidden" />
       <input id="np-imagen-fondo-url" type="hidden" />
@@ -185,11 +187,10 @@
       <div id="np-contenido-wrap" class="oculto">
         <label>¿Qué lleva el bolsón?</label>
         <div id="np-contenido-filas"></div>
-        <datalist id="lista-productos-bolson"></datalist>
         <button type="button" id="btn-agregar-item-bolson" class="btn-agregar-item-bolson">+ Agregar item</button>
         <p id="np-valor-sugerido" class="oculto"></p>
       </div>
-      <label>Se vende por</label>
+      <label id="np-unidad-label">Se vende por</label>
       <select id="np-unidad">
         <option value="kg">Kilo</option>
         <option value="medio_kg">Medio kilo</option>
