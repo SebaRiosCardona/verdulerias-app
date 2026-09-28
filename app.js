@@ -26,6 +26,10 @@ function porcentajeDescuento() {
   return tiendaInfo?.porcentajeDescuento !== undefined ? tiendaInfo.porcentajeDescuento : PORCENTAJE_DESCUENTO_DEFECTO;
 }
 
+function descuentoConfigurado() {
+  return !!tiendaInfo?.montoMinimoDescuento && tiendaInfo?.porcentajeDescuento !== undefined;
+}
+
 // ---------------------------------------------------------------
 // Setup Firebase
 // ---------------------------------------------------------------
@@ -490,7 +494,9 @@ async function cargarTienda() {
 
     const textoComoFunciona = el("texto-como-funciona");
     if (textoComoFunciona) {
-      textoComoFunciona.innerHTML = `Elegí un bolsón ya armado o creá el tuyo personalizado con los productos que más te gusten, en la cantidad exacta que necesitás. A partir de <strong>${formatoMoneda(montoMinimoDescuento())}</strong> en tu pedido, accedés a un <strong>${Math.round(porcentajeDescuento() * 100)}% de descuento</strong> sobre el total.`;
+      textoComoFunciona.innerHTML = descuentoConfigurado()
+        ? `Elegí un bolsón ya armado o creá el tuyo personalizado con los productos que más te gusten, en la cantidad exacta que necesitás. A partir de <strong>${formatoMoneda(montoMinimoDescuento())}</strong> en tu pedido, accedés a un <strong>${Math.round(porcentajeDescuento() * 100)}% de descuento</strong> sobre el total.`
+        : `Elegí un bolsón ya armado o creá el tuyo personalizado con los productos que más te gusten, en la cantidad exacta que necesitás.`;
     }
 
     await cargarProductos();
